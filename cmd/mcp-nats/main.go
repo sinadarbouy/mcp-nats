@@ -8,11 +8,10 @@ import (
 	"os"
 
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/nats-io/nats.go"
 	"github.com/sinadarbouy/mcp-nats/tools"
 )
 
-func newServer(natsURL string, natsCredsPath string) *server.MCPServer {
+func newServer(natsURL string, AccNatsCredsPath string, SysNatsCredsPath string) *server.MCPServer {
 	s := server.NewMCPServer(
 		"mcp-nats",
 		"0.1.0",
@@ -22,7 +21,7 @@ func newServer(natsURL string, natsCredsPath string) *server.MCPServer {
 	)
 
 	// Initialize NATS server tools
-	natsTools := tools.NewNATSServerTools(natsURL, natsCredsPath)
+	natsTools := tools.NewNATSServerTools(natsURL, AccNatsCredsPath, SysNatsCredsPath)
 
 	// Register all NATS server tools
 	tools.RegisterTools(s, natsTools)
@@ -30,8 +29,8 @@ func newServer(natsURL string, natsCredsPath string) *server.MCPServer {
 	return s
 }
 
-func run(transport, addr, natsURL, natsCredsPath string) error {
-	s := newServer(natsURL, natsCredsPath)
+func run(transport, addr, natsURL, AccNatsCredsPath, SysNatsCredsPath string) error {
+	s := newServer(natsURL, AccNatsCredsPath, SysNatsCredsPath)
 
 	switch transport {
 	case "stdio":
@@ -57,20 +56,17 @@ func main() {
 	if natsURL == "" {
 		log.Fatal("NATS_URL environment variable is required")
 	}
-	natsCredsPath := os.Getenv("NATS_CREDS_PATH")
-	if natsCredsPath == "" {
+	AccNatsCredsPath := os.Getenv("NATS_CREDS_PATH")
+	if AccNatsCredsPath == "" {
 		log.Fatal("NATS_CREDS_PATH environment variable is required")
 	}
-
-	// Connect to NATS
-	nc, err := nats.Connect(natsURL, nats.UserCredentials(natsCredsPath))
-	if err != nil {
-		log.Fatalf("Failed to connect to NATS: %v", err)
+	SysNatsCredsPath := os.Getenv("NATS_CREDS_PATH_SYS")
+	if SysNatsCredsPath == "" {
+		log.Fatal("NATS_CREDS_PATH_SYS environment variable is required")
 	}
-	defer nc.Close()
 
 	fmt.Printf("Starting MCP NATS server (stdio)...\n")
-	if err := run("stdio", "0.0.0.0:8002", natsURL, natsCredsPath); err != nil {
+	if err := run("stdio", "0.0.0.0:8002", natsURL, AccNatsCredsPath, SysNatsCredsPath); err != nil {
 		panic(err)
 	}
 }

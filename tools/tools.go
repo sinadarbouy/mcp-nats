@@ -5,29 +5,35 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+// ToolCategory represents a group of related NATS tools
+type ToolCategory interface {
+	GetTools() []Tool
+}
+
+// Tool combines an MCP tool definition with its handler
 type Tool struct {
 	Tool    mcp.Tool
 	Handler server.ToolHandlerFunc
 }
 
-// List of available tools.
-var Tools []Tool
-
+// Register registers a single tool with the MCP server
 func (t *Tool) Register(mcp *server.MCPServer) {
 	mcp.AddTool(t.Tool, t.Handler)
 }
 
+// RegisterTools registers all tools from all categories with the MCP server
 func RegisterTools(mcp *server.MCPServer, n *NATSServerTools) {
-	for _, tool := range getTools(n) {
-		tool.Register(mcp)
+	// Define tool categories
+	categories := []ToolCategory{
+		n.ServerTools(),
+		n.StreamTools(),
+		// Add new categories here as needed
 	}
-}
 
-func getTools(n *NATSServerTools) []Tool {
-	serverTools := n.GetServerTools()
-	streamTools := n.GetStreamTools()
-	tools := []Tool{}
-	tools = append(tools, serverTools...)
-	tools = append(tools, streamTools...)
-	return tools
+	// Register all tools from each category
+	for _, category := range categories {
+		for _, tool := range category.GetTools() {
+			tool.Register(mcp)
+		}
+	}
 }
