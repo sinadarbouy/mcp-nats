@@ -43,7 +43,7 @@ func urlFromEnv() (string, string) {
 	return u, ""
 }
 
-// WithNatsURL adds the Grafana URL to the context.
+// WithNatsURL adds the Nats URL to the context.
 func WithNatsURL(ctx context.Context, url string) context.Context {
 	return context.WithValue(ctx, natsURLKey{}, url)
 }
@@ -81,7 +81,7 @@ func natsCredsFromContext(ctx context.Context) (map[string]common.NATSCreds, err
 	return creds, nil
 }
 
-// ExtractNatsInfoFromHeaders is a SSEContextFunc that extracts Grafana configuration
+// ExtractNatsInfoFromHeaders is a SSEContextFunc that extracts nats configuration
 // from request headers and injects a configured client into the context.
 var ExtractNatsInfoFromHeaders server.SSEContextFunc = func(ctx context.Context, req *http.Request) context.Context {
 	if ctx == nil {
