@@ -34,6 +34,21 @@ Set the following environment variables:
 - `NATS_URL`: The URL of your NATS server (e.g., `nats://localhost:4222`)
 - (Optional) `NATS_CREDS`: Path to NATS credentials file
 
+Command line flags:
+- `--transport`: Transport type (stdio or sse), default: stdio
+- `--sse-address`: Address for SSE server to listen on, default: 0.0.0.0:8000
+- `--log-level`: Log level (debug, info, warn, error), default: info
+- `--json-logs`: Output logs in JSON format, default: false
+
+Example with custom logging:
+```sh
+# Run with debug logging in JSON format
+./mcp-nats --transport sse --log-level debug --json-logs
+
+# Run with warning level in text format
+./mcp-nats --log-level warn
+```
+
 ### 3. Tools
 
 The MCP NATS server exposes the following tools:

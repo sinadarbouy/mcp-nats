@@ -31,12 +31,16 @@ func (s *StreamTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"stream": map[string]interface{}{
 							"type":        "string",
 							"description": "The name of the stream to get information about",
 						},
 					},
-					Required: []string{"stream"},
+					Required: []string{"account_name", "stream"},
 				},
 			},
 			Handler: s.streamInfoHandler(),
@@ -46,9 +50,14 @@ func (s *StreamTools) GetTools() []Tool {
 				Name:        "stream_list",
 				Description: "List all known Streams",
 				InputSchema: mcp.ToolInputSchema{
-					Type:       "object",
-					Properties: map[string]interface{}{},
-					Required:   []string{},
+					Type: "object",
+					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
+					},
+					Required: []string{"account_name"},
 				},
 			},
 			Handler: s.streamListHandler(),
@@ -58,9 +67,14 @@ func (s *StreamTools) GetTools() []Tool {
 				Name:        "stream_report",
 				Description: "Reports on Stream statistics",
 				InputSchema: mcp.ToolInputSchema{
-					Type:       "object",
-					Properties: map[string]interface{}{},
-					Required:   []string{},
+					Type: "object",
+					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
+					},
+					Required: []string{"account_name"},
 				},
 			},
 			Handler: s.streamReportHandler(),
@@ -70,9 +84,14 @@ func (s *StreamTools) GetTools() []Tool {
 				Name:        "stream_find",
 				Description: "Finds streams matching certain criteria",
 				InputSchema: mcp.ToolInputSchema{
-					Type:       "object",
-					Properties: map[string]interface{}{},
-					Required:   []string{},
+					Type: "object",
+					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
+					},
+					Required: []string{"account_name"},
 				},
 			},
 			Handler: s.streamFindHandler(),
@@ -84,12 +103,16 @@ func (s *StreamTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"stream": map[string]interface{}{
 							"type":        "string",
 							"description": "The name of the stream to get state for",
 						},
 					},
-					Required: []string{"stream"},
+					Required: []string{"account_name", "stream"},
 				},
 			},
 			Handler: s.streamStateHandler(),
@@ -101,12 +124,16 @@ func (s *StreamTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"stream": map[string]interface{}{
 							"type":        "string",
 							"description": "Stream name",
 						},
 					},
-					Required: []string{"stream"},
+					Required: []string{"account_name", "stream"},
 				},
 			},
 			Handler: s.streamSubjectsHandler(),
@@ -118,6 +145,10 @@ func (s *StreamTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"stream": map[string]interface{}{
 							"type":        "string",
 							"description": "Stream name",
@@ -127,7 +158,7 @@ func (s *StreamTools) GetTools() []Tool {
 							"description": "Page size",
 						},
 					},
-					Required: []string{"stream", "size"},
+					Required: []string{"account_name", "stream", "size"},
 				},
 			},
 			Handler: s.streamViewHandler(),
@@ -139,6 +170,10 @@ func (s *StreamTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"stream": map[string]interface{}{
 							"type":        "string",
 							"description": "Stream name",
@@ -148,7 +183,7 @@ func (s *StreamTools) GetTools() []Tool {
 							"description": "Message Sequence to retrieve",
 						},
 					},
-					Required: []string{"stream", "id"},
+					Required: []string{"account_name", "stream", "id"},
 				},
 			},
 			Handler: s.streamGetHandler(),
@@ -158,11 +193,22 @@ func (s *StreamTools) GetTools() []Tool {
 
 func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
 		stream, ok := request.Params.Arguments["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "info", stream)
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "info", stream)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +218,17 @@ func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 
 func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "list")
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "list")
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +239,17 @@ func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 // nats stream report
 func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "report")
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "report")
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +260,17 @@ func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 // nats stream find
 func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "find")
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "find")
 		if err != nil {
 			return nil, err
 		}
@@ -208,11 +284,22 @@ func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 //	[<stream>]  Stream to retrieve state information for
 func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
 		stream, ok := request.Params.Arguments["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "state", stream)
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "state", stream)
 		if err != nil {
 			return nil, err
 		}
@@ -226,11 +313,22 @@ func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 //	[<stream>]  Stream name
 func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
 		stream, ok := request.Params.Arguments["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "subjects", stream)
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "subjects", stream)
 		if err != nil {
 			return nil, err
 		}
@@ -245,15 +343,27 @@ func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 //	 [<size>]    Page size
 func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
 		stream, ok := request.Params.Arguments["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
+
 		size, ok := request.Params.Arguments["size"].(int)
 		if !ok {
 			return nil, fmt.Errorf("missing size")
 		}
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "view", stream, strconv.Itoa(size))
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "view", stream, strconv.Itoa(size))
 		if err != nil {
 			return nil, err
 		}
@@ -268,15 +378,27 @@ func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 //	[<id>]      Message Sequence to retrieve
 func (s *StreamTools) streamGetHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
 		stream, ok := request.Params.Arguments["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
+
 		id, ok := request.Params.Arguments["id"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing id")
 		}
-		output, err := s.nats.GetAccExecutor().ExecuteCommand("stream", "get", stream, id)
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
+		output, err := executor.ExecuteCommand("stream", "get", stream, id)
 		if err != nil {
 			return nil, err
 		}

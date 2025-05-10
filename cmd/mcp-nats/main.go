@@ -4,15 +4,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
-	"log/slog"
 	"os"
 
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/sinadarbouy/mcp-nats/internal/logger"
 	"github.com/sinadarbouy/mcp-nats/tools"
 )
 
-func newServer(natsURL string, AccNatsCredsPath string, SysNatsCredsPath string) *server.MCPServer {
+func newServer(natsURL string) (*server.MCPServer, error) {
 	s := server.NewMCPServer(
 		"mcp-nats",
 		"0.1.0",
@@ -22,24 +21,33 @@ func newServer(natsURL string, AccNatsCredsPath string, SysNatsCredsPath string)
 	)
 
 	// Initialize NATS server tools
-	natsTools := tools.NewNATSServerTools(natsURL, AccNatsCredsPath, SysNatsCredsPath)
+	natsTools, err := tools.NewNATSServerTools(natsURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize NATS tools: %v", err)
+	}
 
 	// Register all NATS server tools
 	tools.RegisterTools(s, natsTools)
 
-	return s
+	return s, nil
 }
 
-func run(transport, addr, natsURL, AccNatsCredsPath, SysNatsCredsPath string) error {
-	s := newServer(natsURL, AccNatsCredsPath, SysNatsCredsPath)
+func run(transport, addr, natsURL string) error {
+	s, err := newServer(natsURL)
+	if err != nil {
+		return err
+	}
 
 	switch transport {
 	case "stdio":
 		srv := server.NewStdioServer(s)
+		logger.Info("Starting NATS MCP server using stdio transport")
 		return srv.Listen(context.Background(), os.Stdin, os.Stdout)
 	case "sse":
 		srv := server.NewSSEServer(s)
-		slog.Info("Starting NATS MCP server using SSE transport", "address", addr)
+		logger.Info("Starting NATS MCP server using SSE transport",
+			"address", addr,
+		)
 		if err := srv.Start(addr); err != nil {
 			return fmt.Errorf("Server error: %v", err)
 		}
@@ -56,23 +64,31 @@ func main() {
 	// Parse command line flags
 	transport := flag.String("transport", "stdio", "Transport type (stdio or sse)")
 	sseAddr := flag.String("sse-address", "0.0.0.0:8000", "Address for SSE server to listen on")
+	logLevel := flag.String("log-level", "info", "Log level (debug, info, warn, error)")
+	jsonLogs := flag.Bool("json-logs", false, "Output logs in JSON format")
 	flag.Parse()
+
+	// Initialize logger
+	logger.Initialize(logger.Config{
+		Level:      logger.GetLevel(*logLevel),
+		JSONFormat: *jsonLogs,
+	})
 
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {
-		log.Fatal("NATS_URL environment variable is required")
-	}
-	AccNatsCredsPath := os.Getenv("NATS_CREDS_PATH")
-	if AccNatsCredsPath == "" {
-		log.Fatal("NATS_CREDS_PATH environment variable is required")
-	}
-	SysNatsCredsPath := os.Getenv("NATS_CREDS_PATH_SYS")
-	if SysNatsCredsPath == "" {
-		log.Fatal("NATS_CREDS_PATH_SYS environment variable is required")
+		logger.Error("NATS_URL environment variable is required")
+		os.Exit(1)
 	}
 
-	fmt.Printf("Starting MCP NATS server (%s)...\n", *transport)
-	if err := run(*transport, *sseAddr, natsURL, AccNatsCredsPath, SysNatsCredsPath); err != nil {
-		panic(err)
+	logger.Info("Starting MCP NATS server",
+		"transport", *transport,
+		"version", "0.1.0",
+	)
+
+	if err := run(*transport, *sseAddr, natsURL); err != nil {
+		logger.Error("Server failed",
+			"error", err,
+		)
+		os.Exit(1)
 	}
 }

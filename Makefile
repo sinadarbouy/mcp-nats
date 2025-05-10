@@ -21,9 +21,5 @@ run: ## Run the MCP server in stdio mode.
 	go run ./cmd/mcp-nats
 
 .PHONY: run-sse
-run-sse: ## Run the MCP server in SSE mode.
-	go run ./cmd/mcp-nats --transport sse --log-level debug --debug
-
-.PHONY: run-test-services
-run-test-services: ## Run the docker-compose services required for the unit and integration tests.
-	docker-compose up -d --build
+run-sse: ## Run with debug level and JSON format
+	go run ./cmd/mcp-nats --transport sse --log-level debug

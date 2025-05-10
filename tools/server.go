@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -30,12 +31,16 @@ func (s *ServerTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"expect": map[string]interface{}{
 							"type":        "integer",
 							"description": "How many servers to expect",
 						},
 					},
-					Required: []string{},
+					Required: []string{"account_name"},
 				},
 			},
 			Handler: s.serverListHandler(),
@@ -47,12 +52,16 @@ func (s *ServerTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"server": map[string]interface{}{
 							"type":        "string",
 							"description": "Server ID or Name to inspect",
 						},
 					},
-					Required: []string{},
+					Required: []string{"account_name"},
 				},
 			},
 			Handler: s.serverInfoHandler(),
@@ -64,12 +73,16 @@ func (s *ServerTools) GetTools() []Tool {
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
 					Properties: map[string]interface{}{
+						"account_name": map[string]interface{}{
+							"type":        "string",
+							"description": "The NATS account to use",
+						},
 						"expect": map[string]interface{}{
 							"type":        "integer",
 							"description": "How many servers to expect",
 						},
 					},
-					Required: []string{},
+					Required: []string{"account_name"},
 				},
 			},
 			Handler: s.serverPingHandler(),
@@ -80,9 +93,20 @@ func (s *ServerTools) GetTools() []Tool {
 // nats server list
 // Args:
 //
+//	[<account_name>]  The NATS account to use
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
+		executor, err := s.nats.GetExecutor(accountName)
+		if err != nil {
+			return nil, err
+		}
+
 		var args []string
 		args = append(args, "server", "list")
 
@@ -90,7 +114,7 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 			args = append(args, strconv.Itoa(expect))
 		}
 
-		output, err := s.nats.GetSysExecutor().ExecuteCommand(args...)
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -101,16 +125,22 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 // nats server info
 // Args:
 //
+//	[<account_name>]  The NATS account to use
 //	[<server>]  Server ID or Name to inspect
 func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		executor, err := s.nats.GetExecutor("SYS")
+		if err != nil {
+			return nil, err
+		}
+
 		var args []string
 		args = append(args, "server", "info")
 
 		if server, ok := request.Params.Arguments["server"].(string); ok {
 			args = append(args, server)
 		}
-		output, err := s.nats.GetSysExecutor().ExecuteCommand(args...)
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -121,16 +151,22 @@ func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 // nats server ping
 // Args:
 //
+//	[<account_name>]  The NATS account to use
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverPingHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		executor, err := s.nats.GetExecutor("SYS")
+		if err != nil {
+			return nil, err
+		}
+
 		var args []string
 		args = append(args, "server", "ping")
 
 		if expect, ok := request.Params.Arguments["expect"].(string); ok {
 			args = append(args, expect)
 		}
-		output, err := s.nats.GetSysExecutor().ExecuteCommand(args...)
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
