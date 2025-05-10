@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/nats-io/nats.go"
 	"github.com/sinadarbouy/mcp-nats/tools"
@@ -21,20 +20,13 @@ func newServer(natsURL string, natsCredsPath string) *server.MCPServer {
 		server.WithLogging(),
 		server.WithRecovery(),
 	)
-	serverInfoTool := mcp.Tool{
-		Name:        "server_list",
-		Description: "Get NATS known server list",
-		InputSchema: mcp.ToolInputSchema{
-			Type:       "object",
-			Properties: map[string]interface{}{},
-		},
-	}
-	tool := tools.Tool{
-		Tool:    serverInfoTool,
-		Handler: tools.GetServerlistToolHandler(natsURL, natsCredsPath),
-	}
-	tools.Tools = append(tools.Tools, tool)
-	tools.RegisterTools(s, tools.Tools)
+
+	// Initialize NATS server tools
+	natsTools := tools.NewNATSServerTools(natsURL, natsCredsPath)
+
+	// Register all NATS server tools
+	tools.RegisterTools(s, natsTools)
+
 	return s
 }
 
@@ -78,7 +70,6 @@ func main() {
 	defer nc.Close()
 
 	fmt.Printf("Starting MCP NATS server (stdio)...\n")
-	// fmt.Printf("Connected to NATS at %s\n", natsURL)
 	if err := run("stdio", "0.0.0.0:8002", natsURL, natsCredsPath); err != nil {
 		panic(err)
 	}

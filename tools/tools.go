@@ -17,8 +17,17 @@ func (t *Tool) Register(mcp *server.MCPServer) {
 	mcp.AddTool(t.Tool, t.Handler)
 }
 
-func RegisterTools(mcp *server.MCPServer, tools []Tool) {
-	for _, tool := range tools {
+func RegisterTools(mcp *server.MCPServer, n *NATSServerTools) {
+	for _, tool := range getTools(n) {
 		tool.Register(mcp)
 	}
+}
+
+func getTools(n *NATSServerTools) []Tool {
+	serverTools := n.GetServerTools()
+	streamTools := n.GetStreamTools()
+	tools := []Tool{}
+	tools = append(tools, serverTools...)
+	tools = append(tools, streamTools...)
+	return tools
 }
