@@ -11,20 +11,20 @@ This project provides a Model Context Protocol (MCP) server for NATS, enabling A
 The Model Context Protocol (MCP) is an open protocol that standardizes how applications provide context to Large Language Models (LLMs). This server implements the MCP specification to provide NATS messaging capabilities to LLMs and AI applications, allowing them to:
 
 - Interact with NATS messaging systems in a standardized way
-- Access and manage NATS servers and streams
-- Perform messaging operations through a secure interface
+- Safely inspect and monitor NATS servers and streams
+- Perform read-only operations through a secure interface
 - Integrate with other MCP-compatible clients and hosts
 
 ## Features
-- Server Management
+- Server Management (Read-only Operations)
   - List and inspect NATS servers
   - Server health monitoring and ping
   - Server information retrieval
-- Stream Operations
-  - Create and manage NATS streams
+- Stream Operations (Read-only Operations)
+  - View and inspect NATS streams
   - Stream state and information queries
-  - Message publishing and retrieval
-  - Subject management
+  - Message viewing and retrieval
+  - Subject inspection
 - Multi-Account Support
   - Handle multiple NATS accounts simultaneously
   - Secure credential management
@@ -32,6 +32,7 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
   - Implements MCP server specification
   - Compatible with MCP clients like Claude Desktop
   - Standardized tool definitions for LLM interaction
+  - Safe, read-only operations for AI interaction with NATS
 
 ## Requirements
 - Go 1.24 or later
@@ -104,6 +105,7 @@ cursor
       "url": "http://localhost:8000/sse"
     }
   }
+}
 ```
 If using the binary:
 ```json
