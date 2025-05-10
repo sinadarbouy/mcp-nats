@@ -16,11 +16,11 @@ COPY . .
 # Build the application
 RUN go build -o mcp-nats ./cmd/mcp-nats
 
+# Install NATS CLI
+RUN go install github.com/nats-io/natscli/nats@latest
+
 # Final stage
 FROM debian:bullseye-slim
-
-# Install ca-certificates for HTTPS requests
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
 RUN useradd -r -u 1000 -m mcp-nats
@@ -30,6 +30,7 @@ WORKDIR /app
 
 # Copy the binary from the builder stage
 COPY --from=builder --chown=1000:1000 /app/mcp-nats /app/
+COPY --from=builder --chown=1000:1000 /go/bin/nats /usr/local/bin/
 
 # Use the non-root user
 USER mcp-nats

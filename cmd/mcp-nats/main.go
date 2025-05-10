@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -52,6 +53,11 @@ func run(transport, addr, natsURL, AccNatsCredsPath, SysNatsCredsPath string) er
 }
 
 func main() {
+	// Parse command line flags
+	transport := flag.String("transport", "stdio", "Transport type (stdio or sse)")
+	sseAddr := flag.String("sse-address", "0.0.0.0:8000", "Address for SSE server to listen on")
+	flag.Parse()
+
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {
 		log.Fatal("NATS_URL environment variable is required")
@@ -65,8 +71,8 @@ func main() {
 		log.Fatal("NATS_CREDS_PATH_SYS environment variable is required")
 	}
 
-	fmt.Printf("Starting MCP NATS server (stdio)...\n")
-	if err := run("stdio", "0.0.0.0:8002", natsURL, AccNatsCredsPath, SysNatsCredsPath); err != nil {
+	fmt.Printf("Starting MCP NATS server (%s)...\n", *transport)
+	if err := run(*transport, *sseAddr, natsURL, AccNatsCredsPath, SysNatsCredsPath); err != nil {
 		panic(err)
 	}
 }
