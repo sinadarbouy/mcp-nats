@@ -1,6 +1,6 @@
 # mcp-nats
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for NATS messaging system integration
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [NATS](https://nats.io/) messaging system integration
 
 ## Overview
 
@@ -53,12 +53,6 @@ cd mcp-nats
 go build -o mcp-nats ./cmd/mcp-nats
 ```
 
-### Using Docker
-```sh
-docker build -t mcp-nats .
-docker run -p 8000:8000 -e NATS_URL=nats://your-nats-server:4222 mcp-nats
-```
-
 ## Configuration
 
 ### Environment Variables
@@ -86,7 +80,7 @@ docker run -p 8000:8000 -e NATS_URL=nats://your-nats-server:4222 mcp-nats
 
 ### Using VSCode with remote MCP server
 Make sure your .vscode/settings.json includes:
-'''
+```json
 "mcp": {
   "servers": {
     "nats": {
@@ -95,13 +89,32 @@ Make sure your .vscode/settings.json includes:
     }
   }
 }
-'''
+```
+or 
+cursor
+```json
+{
+  "mcpServers": {
+    "MCP_NATS_3": {
+      "env": {
+        "NATS_URL": "localhost:42222",
+        "NATS_SYS_CREDS": "<base64 of SYS account creds>"
+        "NATS_A_CREDS": "<base64 of SYS account creds>"
+      },
+      "url": "http://localhost:8000/sse"
+    }
+  }
+```
 If using the binary:
+```json
 {
   "mcpServers": {
     "nats": {
       "command": "mcp-nats",
-      "args": [],
+      "args": [
+        "--transport",
+        "stdio"
+      ],
       "env": {
         "NATS_URL": "localhost:42222",
         "NATS_SYS_CREDS": "<base64 of SYS account creds>"
@@ -110,7 +123,7 @@ If using the binary:
     }
   }
 }
-
+```
 
 ## Development
 
