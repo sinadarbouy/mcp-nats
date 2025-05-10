@@ -5,6 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/mark3labs/mcp-go/server"
 	mcpnats "github.com/sinadarbouy/mcp-nats"
@@ -12,10 +15,36 @@ import (
 	"github.com/sinadarbouy/mcp-nats/tools"
 )
 
+const (
+	// Version of the application
+	Version = "0.1.0"
+	// AppName is the name of the application
+	AppName = "mcp-nats"
+)
+
+// Config holds all configuration for the server
+type Config struct {
+	Transport string
+	SSEAddr   string
+	LogLevel  string
+	JSONLogs  bool
+}
+
+// validateConfig ensures all config values are valid
+func validateConfig(cfg *Config) error {
+	if cfg.Transport != "stdio" && cfg.Transport != "sse" {
+		return fmt.Errorf("invalid transport type: %s (must be 'stdio' or 'sse')", cfg.Transport)
+	}
+	if cfg.Transport == "sse" && cfg.SSEAddr == "" {
+		return fmt.Errorf("sse-address cannot be empty when using sse transport")
+	}
+	return nil
+}
+
 func newServer() (*server.MCPServer, error) {
 	s := server.NewMCPServer(
-		"mcp-nats",
-		"0.1.0",
+		AppName,
+		Version,
 		server.WithResourceCapabilities(true, true),
 		server.WithLogging(),
 		server.WithRecovery(),
@@ -24,7 +53,7 @@ func newServer() (*server.MCPServer, error) {
 	// Initialize NATS server tools
 	natsTools, err := tools.NewNATSServerTools()
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize NATS tools: %v", err)
+		return nil, fmt.Errorf("failed to initialize NATS tools: %w", err)
 	}
 
 	// Register all NATS server tools
@@ -33,55 +62,88 @@ func newServer() (*server.MCPServer, error) {
 	return s, nil
 }
 
-func run(transport, addr string) error {
+func run(ctx context.Context, cfg *Config) error {
 	s, err := newServer()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create server: %w", err)
 	}
 
-	switch transport {
+	switch cfg.Transport {
 	case "stdio":
 		srv := server.NewStdioServer(s)
 		srv.SetContextFunc(mcpnats.ComposedStdioContextFunc())
 		logger.Info("Starting NATS MCP server using stdio transport")
-		return srv.Listen(context.Background(), os.Stdin, os.Stdout)
+		return srv.Listen(ctx, os.Stdin, os.Stdout)
+
 	case "sse":
 		srv := server.NewSSEServer(s, server.WithSSEContextFunc(mcpnats.ComposedSSEContextFunc()))
 		logger.Info("Starting NATS MCP server using SSE transport",
-			"address", addr,
+			"address", cfg.SSEAddr,
 		)
-		if err := srv.Start(addr); err != nil {
-			return fmt.Errorf("Server error: %v", err)
+
+		errChan := make(chan error, 1)
+		go func() {
+			if err := srv.Start(cfg.SSEAddr); err != nil {
+				errChan <- fmt.Errorf("server error: %w", err)
+			}
+		}()
+
+		// Wait for either context cancellation or server error
+		select {
+		case err := <-errChan:
+			return err
+		case <-ctx.Done():
+			// Give the server some time to shutdown gracefully
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			return srv.Shutdown(shutdownCtx)
 		}
-	default:
-		return fmt.Errorf(
-			"Invalid transport type: %s. Must be 'stdio' or 'sse'",
-			transport,
-		)
 	}
+
 	return nil
 }
 
 func main() {
+	cfg := &Config{}
+
 	// Parse command line flags
-	transport := flag.String("transport", "stdio", "Transport type (stdio or sse)")
-	sseAddr := flag.String("sse-address", "0.0.0.0:8000", "Address for SSE server to listen on")
-	logLevel := flag.String("log-level", "info", "Log level (debug, info, warn, error)")
-	jsonLogs := flag.Bool("json-logs", false, "Output logs in JSON format")
+	flag.StringVar(&cfg.Transport, "transport", "stdio", "Transport type (stdio or sse)")
+	flag.StringVar(&cfg.SSEAddr, "sse-address", "0.0.0.0:8000", "Address for SSE server to listen on")
+	flag.StringVar(&cfg.LogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
+	flag.BoolVar(&cfg.JSONLogs, "json-logs", false, "Output logs in JSON format")
 	flag.Parse()
+
+	// Validate configuration
+	if err := validateConfig(cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Initialize logger
 	logger.Initialize(logger.Config{
-		Level:      logger.GetLevel(*logLevel),
-		JSONFormat: *jsonLogs,
+		Level:      logger.GetLevel(cfg.LogLevel),
+		JSONFormat: cfg.JSONLogs,
 	})
 
 	logger.Info("Starting MCP NATS server",
-		"transport", *transport,
-		"version", "0.1.0",
+		"transport", cfg.Transport,
+		"version", Version,
 	)
 
-	if err := run(*transport, *sseAddr); err != nil {
+	// Setup context with cancellation for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Handle shutdown signals
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigChan
+		logger.Info("Received shutdown signal", "signal", sig)
+		cancel()
+	}()
+
+	if err := run(ctx, cfg); err != nil {
 		logger.Error("Server failed",
 			"error", err,
 		)
