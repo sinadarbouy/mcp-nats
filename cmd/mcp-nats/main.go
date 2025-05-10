@@ -7,11 +7,12 @@ import (
 	"os"
 
 	"github.com/mark3labs/mcp-go/server"
+	mcpnats "github.com/sinadarbouy/mcp-nats"
 	"github.com/sinadarbouy/mcp-nats/internal/logger"
 	"github.com/sinadarbouy/mcp-nats/tools"
 )
 
-func newServer(natsURL string) (*server.MCPServer, error) {
+func newServer() (*server.MCPServer, error) {
 	s := server.NewMCPServer(
 		"mcp-nats",
 		"0.1.0",
@@ -21,7 +22,7 @@ func newServer(natsURL string) (*server.MCPServer, error) {
 	)
 
 	// Initialize NATS server tools
-	natsTools, err := tools.NewNATSServerTools(natsURL)
+	natsTools, err := tools.NewNATSServerTools()
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize NATS tools: %v", err)
 	}
@@ -32,8 +33,8 @@ func newServer(natsURL string) (*server.MCPServer, error) {
 	return s, nil
 }
 
-func run(transport, addr, natsURL string) error {
-	s, err := newServer(natsURL)
+func run(transport, addr string) error {
+	s, err := newServer()
 	if err != nil {
 		return err
 	}
@@ -41,10 +42,11 @@ func run(transport, addr, natsURL string) error {
 	switch transport {
 	case "stdio":
 		srv := server.NewStdioServer(s)
+		srv.SetContextFunc(mcpnats.ComposedStdioContextFunc())
 		logger.Info("Starting NATS MCP server using stdio transport")
 		return srv.Listen(context.Background(), os.Stdin, os.Stdout)
 	case "sse":
-		srv := server.NewSSEServer(s)
+		srv := server.NewSSEServer(s, server.WithSSEContextFunc(mcpnats.ComposedSSEContextFunc()))
 		logger.Info("Starting NATS MCP server using SSE transport",
 			"address", addr,
 		)
@@ -74,18 +76,12 @@ func main() {
 		JSONFormat: *jsonLogs,
 	})
 
-	natsURL := os.Getenv("NATS_URL")
-	if natsURL == "" {
-		logger.Error("NATS_URL environment variable is required")
-		os.Exit(1)
-	}
-
 	logger.Info("Starting MCP NATS server",
 		"transport", *transport,
 		"version", "0.1.0",
 	)
 
-	if err := run(*transport, *sseAddr, natsURL); err != nil {
+	if err := run(*transport, *sseAddr); err != nil {
 		logger.Error("Server failed",
 			"error", err,
 		)

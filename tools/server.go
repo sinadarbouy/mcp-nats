@@ -102,7 +102,7 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -129,7 +129,11 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 //	[<server>]  Server ID or Name to inspect
 func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		executor, err := s.nats.GetExecutor("SYS")
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -155,7 +159,12 @@ func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverPingHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		executor, err := s.nats.GetExecutor("SYS")
+		accountName, ok := request.Params.Arguments["account_name"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing account_name")
+		}
+
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}

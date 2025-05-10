@@ -1,109 +1,135 @@
 # mcp-nats
 
-MCP server for NATS
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for NATS messaging system integration
 
 ## Overview
 
-This project provides an MCP (Multi-Cloud Proxy) server for NATS, It exposes a set of tools for interacting with a NATS server, such as publishing and subscribing to messages, via a unified API.
+This project provides a Model Context Protocol (MCP) server for NATS, enabling AI models and applications to interact with NATS messaging systems through a standardized interface. It exposes a comprehensive set of tools for interacting with NATS servers, making it ideal for AI-powered applications that need to work with messaging systems.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is an open protocol that standardizes how applications provide context to Large Language Models (LLMs). This server implements the MCP specification to provide NATS messaging capabilities to LLMs and AI applications, allowing them to:
+
+- Interact with NATS messaging systems in a standardized way
+- Access and manage NATS servers and streams
+- Perform messaging operations through a secure interface
+- Integrate with other MCP-compatible clients and hosts
 
 ## Features
-- Publish messages to NATS subjects
-- Subscribe to NATS subjects
-- Request/reply pattern support
-- Designed for extensibility and integration
+- Server Management
+  - List and inspect NATS servers
+  - Server health monitoring and ping
+  - Server information retrieval
+- Stream Operations
+  - Create and manage NATS streams
+  - Stream state and information queries
+  - Message publishing and retrieval
+  - Subject management
+- Multi-Account Support
+  - Handle multiple NATS accounts simultaneously
+  - Secure credential management
+- MCP Integration
+  - Implements MCP server specification
+  - Compatible with MCP clients like Claude Desktop
+  - Standardized tool definitions for LLM interaction
 
-## Usage
+## Requirements
+- Go 1.24 or later
+- NATS server (accessible via URL)
+- NATS credentials for authentication
+- MCP-compatible client (e.g., Claude Desktop, or other MCP clients)
 
-### 1. Build and Run
+## Installation
 
-#### Using Go
+### Using Go
 ```sh
-go build -o mcp-nats ./cmd/mcp-nats
-./mcp-nats
+go install github.com/sinadarbouy/mcp-nats/cmd/mcp-nats@latest
 ```
 
-#### Using Docker
+### Building from Source
+```sh
+git clone https://github.com/sinadarbouy/mcp-nats.git
+cd mcp-nats
+go build -o mcp-nats ./cmd/mcp-nats
+```
+
+### Using Docker
 ```sh
 docker build -t mcp-nats .
-docker run -p 8000:8000 -e NATS_URL=nats://localhost:4222 mcp-nats
+docker run -p 8000:8000 -e NATS_URL=nats://your-nats-server:4222 mcp-nats
 ```
 
-### 2. Configuration
+## Configuration
 
-Set the following environment variables:
+### Environment Variables
 - `NATS_URL`: The URL of your NATS server (e.g., `nats://localhost:4222`)
-- (Optional) `NATS_CREDS`: Path to NATS credentials file
+- `NATS_<ACCOUNT>_CREDS`: Base64 encoded NATS credentials for each account
+  - Example: `NATS_SYS_CREDS`, `NATS_A_CREDS`
 
-Command line flags:
+### Command Line Flags
 - `--transport`: Transport type (stdio or sse), default: stdio
 - `--sse-address`: Address for SSE server to listen on, default: 0.0.0.0:8000
 - `--log-level`: Log level (debug, info, warn, error), default: info
 - `--json-logs`: Output logs in JSON format, default: false
 
-Example with custom logging:
+### Example Usage
 ```sh
-# Run with debug logging in JSON format
-./mcp-nats --transport sse --log-level debug --json-logs
+# Run with SSE transport and debug logging
+./mcp-nats --transport sse --log-level debug
 
-# Run with warning level in text format
-./mcp-nats --log-level warn
+# Run with JSON logging
+./mcp-nats --json-logs
+
+# Run with custom SSE address
+./mcp-nats --transport sse --sse-address localhost:9000
 ```
 
-### 3. Tools
+### Using VSCode with remote MCP server
+Make sure your .vscode/settings.json includes:
+'''
+"mcp": {
+  "servers": {
+    "nats": {
+      "type": "sse",
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+'''
+If using the binary:
+{
+  "mcpServers": {
+    "nats": {
+      "command": "mcp-nats",
+      "args": [],
+      "env": {
+        "NATS_URL": "localhost:42222",
+        "NATS_SYS_CREDS": "<base64 of SYS account creds>"
+        "NATS_A_CREDS": "<base64 of SYS account creds>"
+      }
+    }
+  }
+}
 
-The MCP NATS server exposes the following tools:
-- `publish_message`: Publish a message to a subject
-- `subscribe_subject`: Subscribe to a subject
-- `request_reply`: Send a request and await a reply
 
 ## Development
 
-- Written in Go
-- Contributions welcome!
+### Prerequisites
+- Go 1.24+
+- Docker (optional)
+- NATS CLI
+- Understanding of MCP specification
 
-## License
-
-Apache-2.0 
-
-## Server Info
-
-The MCP NATS server exposes the following HTTP endpoints:
-
-- `GET /healthz` — Health check endpoint. Returns `200 OK` if the server is running.
-- `POST /api/tools` — Main API endpoint for invoking NATS tools (e.g., publish, subscribe, request). (To be implemented)
-
-The server listens on port `8000` by default.
-
-## API Usage
-
-Clients interact with the MCP NATS server via HTTP requests. Example usage for each tool will be documented as the implementation progresses.
-
-### Example: Health Check
-
-```
-GET http://localhost:8000/healthz
-Response: 200 OK
-ok
+### Available Make Commands
+```sh
+make help      # Print help message
+make build     # Build the binary
+make run       # Run in stdio mode
+make run-sse   # Run with SSE transport
+make lint      # Run linters
 ```
 
-### Example: Publish Message (Planned)
-
-```
-POST http://localhost:8000/api/tools
-Content-Type: application/json
-
-{
-  "tool": "publish_message",
-  "params": {
-    "subject": "foo.bar",
-    "message": "hello world"
-  }
-}
-```
-
-Response:
-```
-{
-  "status": "ok"
-}
-``` 
+## Resources
+- [Model Context Protocol Documentation](https://modelcontextprotocol.io/introduction)
+- [MCP Specification](https://modelcontextprotocol.io)
+- [Example MCP Servers](https://modelcontextprotocol.io/example-servers)

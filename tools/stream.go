@@ -203,7 +203,7 @@ func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing stream")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +223,7 @@ func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -244,7 +244,7 @@ func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -265,7 +265,7 @@ func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -294,7 +294,7 @@ func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing stream")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -323,7 +323,7 @@ func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing stream")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -358,7 +358,7 @@ func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing size")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
@@ -393,7 +393,7 @@ func (s *StreamTools) streamGetHandler() server.ToolHandlerFunc {
 			return nil, fmt.Errorf("missing id")
 		}
 
-		executor, err := s.nats.GetExecutor(accountName)
+		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
 		}
