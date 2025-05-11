@@ -96,11 +96,11 @@ cursor
 ```json
 {
   "mcpServers": {
-    "MCP_NATS_3": {
+    "nats": {
       "env": {
         "NATS_URL": "localhost:42222",
         "NATS_SYS_CREDS": "<base64 of SYS account creds>"
-        "NATS_A_CREDS": "<base64 of SYS account creds>"
+        "NATS_A_CREDS": "<base64 of A account creds>"
       },
       "url": "http://localhost:8000/sse"
     }
@@ -120,7 +120,34 @@ If using the binary:
       "env": {
         "NATS_URL": "localhost:42222",
         "NATS_SYS_CREDS": "<base64 of SYS account creds>"
-        "NATS_A_CREDS": "<base64 of SYS account creds>"
+        "NATS_A_CREDS": "<base64 of A account creds>"
+      }
+    }
+  }
+}
+```
+if using docker:
+```json
+{
+  "mcpServers": {
+    "nats": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "--init",
+        "-e",
+        "NATS_URL",
+        "-e",
+        "NATS_SYS_CREDS",
+        "cnadb/mcp-nats",
+        "--transport",
+        "stdio"
+      ],
+      "env": {
+        "NATS_SYS_CREDS": "<base64 of SYS account creds>",
+        "NATS_URL": "<nats url>"
       }
     }
   }
