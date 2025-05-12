@@ -39,6 +39,11 @@ func (s *StreamTools) GetTools() []Tool {
 							"type":        "string",
 							"description": "The name of the stream to get information about",
 						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
+						},
 					},
 					Required: []string{"account_name", "stream"},
 				},
@@ -55,6 +60,11 @@ func (s *StreamTools) GetTools() []Tool {
 						"account_name": map[string]interface{}{
 							"type":        "string",
 							"description": "The NATS account to use",
+						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
 						},
 					},
 					Required: []string{"account_name"},
@@ -73,6 +83,11 @@ func (s *StreamTools) GetTools() []Tool {
 							"type":        "string",
 							"description": "The NATS account to use",
 						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
+						},
 					},
 					Required: []string{"account_name"},
 				},
@@ -89,6 +104,11 @@ func (s *StreamTools) GetTools() []Tool {
 						"account_name": map[string]interface{}{
 							"type":        "string",
 							"description": "The NATS account to use",
+						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
 						},
 					},
 					Required: []string{"account_name"},
@@ -111,6 +131,11 @@ func (s *StreamTools) GetTools() []Tool {
 							"type":        "string",
 							"description": "The name of the stream to get state for",
 						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
+						},
 					},
 					Required: []string{"account_name", "stream"},
 				},
@@ -131,6 +156,11 @@ func (s *StreamTools) GetTools() []Tool {
 						"stream": map[string]interface{}{
 							"type":        "string",
 							"description": "Stream name",
+						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
 						},
 					},
 					Required: []string{"account_name", "stream"},
@@ -157,6 +187,11 @@ func (s *StreamTools) GetTools() []Tool {
 							"type":        "integer",
 							"description": "Page size",
 						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
+						},
 					},
 					Required: []string{"account_name", "stream", "size"},
 				},
@@ -182,6 +217,11 @@ func (s *StreamTools) GetTools() []Tool {
 							"type":        "string",
 							"description": "Message Sequence to retrieve",
 						},
+						"flags": map[string]interface{}{
+							"type":        "array",
+							"items":       map[string]interface{}{"type": "string"},
+							"description": "Optional flags to pass to the command",
+						},
 					},
 					Required: []string{"account_name", "stream", "id"},
 				},
@@ -189,6 +229,20 @@ func (s *StreamTools) GetTools() []Tool {
 			Handler: s.streamGetHandler(),
 		},
 	}
+}
+
+// Helper function to get flags from arguments
+func getFlags(args map[string]interface{}) []string {
+	if flags, ok := args["flags"].([]interface{}); ok {
+		strFlags := make([]string, len(flags))
+		for i, flag := range flags {
+			if strFlag, ok := flag.(string); ok {
+				strFlags[i] = strFlag
+			}
+		}
+		return strFlags
+	}
+	return nil
 }
 
 func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
@@ -208,7 +262,12 @@ func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "info", stream)
+		args := []string{"stream", "info", stream}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -228,7 +287,12 @@ func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "list")
+		args := []string{"stream", "list"}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +313,12 @@ func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "report")
+		args := []string{"stream", "report"}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -270,7 +339,12 @@ func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "find")
+		args := []string{"stream", "find"}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +373,12 @@ func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "state", stream)
+		args := []string{"stream", "state", stream}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -328,7 +407,12 @@ func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "subjects", stream)
+		args := []string{"stream", "subjects", stream}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -363,7 +447,12 @@ func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "view", stream, strconv.Itoa(size))
+		args := []string{"stream", "view", stream, strconv.Itoa(size)}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
@@ -398,7 +487,12 @@ func (s *StreamTools) streamGetHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		output, err := executor.ExecuteCommand("stream", "get", stream, id)
+		args := []string{"stream", "get", stream, id}
+		if flags := getFlags(request.Params.Arguments); flags != nil {
+			args = append(args, flags...)
+		}
+
+		output, err := executor.ExecuteCommand(args...)
 		if err != nil {
 			return nil, err
 		}
