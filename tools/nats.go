@@ -11,7 +11,6 @@ import (
 
 // NATSServerTools contains all NATS server-related tool definitions
 type NATSServerTools struct {
-	url         string
 	executors   map[string]*common.NATSExecutor
 	serverTools *ServerTools
 	streamTools *StreamTools
@@ -45,8 +44,13 @@ func (n *NATSServerTools) GetExecutor(ctx context.Context, accountName string) (
 		return nil, fmt.Errorf("failed to get credentials for account %s: %v", accountName, err)
 	}
 
+	natsURL, err := mcpnats.GetNatsURLFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get NATS URL: %w", err)
+	}
+
 	// Create new executor
-	executor, err := common.NewNATSExecutor(n.url, creds)
+	executor, err := common.NewNATSExecutor(natsURL, creds)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create executor for account %s: %v", accountName, err)
 	}

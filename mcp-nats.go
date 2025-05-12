@@ -180,14 +180,9 @@ func ComposedStdioContextFunc() server.StdioContextFunc {
 
 // GetCredsFromContext retrieves NATS credentials for a specific account from the context.
 // It returns an error if:
-// - The NATS URL is not found in the context
 // - The NATS credentials are not found in the context
 // - No credentials are found for the specified account
 func GetCredsFromContext(ctx context.Context, accountName string) (common.NATSCreds, error) {
-	_, err := natsURLFromContext(ctx)
-	if err != nil {
-		return common.NATSCreds{}, fmt.Errorf("failed to get NATS URL: %w", err)
-	}
 
 	creds, err := natsCredsFromContext(ctx)
 	if err != nil {
@@ -199,6 +194,18 @@ func GetCredsFromContext(ctx context.Context, accountName string) (common.NATSCr
 	}
 
 	return common.NATSCreds{}, fmt.Errorf("no credentials found for account %s", accountName)
+}
+
+// GetNatsURLFromContext retrieves the NATS URL from the context.
+// It returns an error if:
+// - The NATS URL is not found in the context
+// - The NATS URL is not valid
+func GetNatsURLFromContext(ctx context.Context) (string, error) {
+	url, err := natsURLFromContext(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get NATS URL: %w", err)
+	}
+	return url, nil
 }
 
 // Helper functions
