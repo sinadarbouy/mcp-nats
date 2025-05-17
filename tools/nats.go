@@ -14,6 +14,7 @@ type NATSServerTools struct {
 	executors   map[string]*common.NATSExecutor
 	serverTools *ServerTools
 	streamTools *StreamTools
+	kvTools     *KVTools
 }
 
 // NewNATSServerTools creates a new instance of NATSServerTools
@@ -25,6 +26,7 @@ func NewNATSServerTools() (*NATSServerTools, error) {
 	// Initialize tool categories
 	n.serverTools = NewServerTools(n)
 	n.streamTools = NewStreamTools(n)
+	n.kvTools = NewKVTools(n)
 
 	logger.Info("Initialized NATS server tools")
 
@@ -80,4 +82,9 @@ func (n *NATSServerTools) ServerTools() ToolCategory {
 // StreamTools returns the stream tools category
 func (n *NATSServerTools) StreamTools() ToolCategory {
 	return n.streamTools
+}
+
+// KVTools returns the KV tools category
+func (n *NATSServerTools) KVTools() ToolCategory {
+	return n.kvTools
 }

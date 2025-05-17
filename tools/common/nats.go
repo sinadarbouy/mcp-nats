@@ -54,6 +54,7 @@ type NATSExecutor struct {
 	URL       string
 	Creds     NATSCreds
 	credsFile string
+	stdin     string
 }
 
 // NewNATSExecutor creates a new NATSExecutor instance
@@ -89,6 +90,11 @@ func NewNATSExecutor(url string, creds NATSCreds) (*NATSExecutor, error) {
 	}, nil
 }
 
+// SetStdin sets the STDIN input for the next command execution
+func (e *NATSExecutor) SetStdin(input string) {
+	e.stdin = input
+}
+
 // ExecuteCommand executes a NATS CLI command with the configured credentials
 func (e *NATSExecutor) ExecuteCommand(args ...string) (string, error) {
 	baseArgs := []string{"-s", e.URL, "--creds", e.credsFile}
@@ -100,6 +106,14 @@ func (e *NATSExecutor) ExecuteCommand(args ...string) (string, error) {
 	)
 
 	cmd := exec.Command("nats", args...)
+
+	// If stdin is set, use it
+	if e.stdin != "" {
+		cmd.Stdin = strings.NewReader(e.stdin)
+		// Clear stdin after use
+		defer func() { e.stdin = "" }()
+	}
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		logger.Error("NATS command failed",
