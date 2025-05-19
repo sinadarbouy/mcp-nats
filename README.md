@@ -25,6 +25,15 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
   - Stream state and information queries
   - Message viewing and retrieval
   - Subject inspection
+- Key-Value Operations
+  - Create and manage KV buckets
+  - Store and retrieve key-value pairs
+  - Watch for KV updates
+  - Delete keys and buckets
+- Publish Operations
+  - Publish messages to NATS subjects
+  - Support for different message formats
+  - Asynchronous message publishing
 - Multi-Account Support
   - Handle multiple NATS accounts simultaneously
   - Secure credential management

@@ -11,10 +11,11 @@ import (
 
 // NATSServerTools contains all NATS server-related tool definitions
 type NATSServerTools struct {
-	executors   map[string]*common.NATSExecutor
-	serverTools *ServerTools
-	streamTools *StreamTools
-	kvTools     *KVTools
+	executors    map[string]*common.NATSExecutor
+	serverTools  *ServerTools
+	streamTools  *StreamTools
+	kvTools      *KVTools
+	publishTools *PublishTools
 }
 
 // NewNATSServerTools creates a new instance of NATSServerTools
@@ -27,6 +28,7 @@ func NewNATSServerTools() (*NATSServerTools, error) {
 	n.serverTools = NewServerTools(n)
 	n.streamTools = NewStreamTools(n)
 	n.kvTools = NewKVTools(n)
+	n.publishTools = NewPublishTools(n)
 
 	logger.Info("Initialized NATS server tools")
 
@@ -87,4 +89,9 @@ func (n *NATSServerTools) StreamTools() ToolCategory {
 // KVTools returns the KV tools category
 func (n *NATSServerTools) KVTools() ToolCategory {
 	return n.kvTools
+}
+
+// PublishTools returns the publish tools category
+func (n *NATSServerTools) PublishTools() ToolCategory {
+	return n.publishTools
 }
