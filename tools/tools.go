@@ -31,6 +31,7 @@ func RegisterTools(mcp *server.MCPServer, n *NATSServerTools) {
 		n.PublishTools(),
 		n.AccountTools(),
 		n.RTTTools(),
+		n.ObjectTools(),
 		// Add new categories here as needed
 	}
 

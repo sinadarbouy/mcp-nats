@@ -26,6 +26,13 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
   - Stream state and information queries
   - Message viewing and retrieval
   - Subject inspection
+- Object Store Operations
+  - Create and manage object store buckets
+  - Put and get files from object stores
+  - List buckets and their contents
+  - Delete objects and buckets
+  - Watch buckets for changes
+  - Seal buckets to prevent updates
 - Key-Value Operations
   - Create and manage KV buckets
   - Store and retrieve key-value pairs

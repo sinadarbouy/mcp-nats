@@ -18,6 +18,7 @@ type NATSServerTools struct {
 	publishTools *PublishTools
 	accountTools *AccountTools
 	rttTools     *RTTTools
+	objectTools  *ObjectTools
 }
 
 // NewNATSServerTools creates a new instance of NATSServerTools
@@ -33,7 +34,7 @@ func NewNATSServerTools() (*NATSServerTools, error) {
 	n.publishTools = NewPublishTools(n)
 	n.accountTools = NewAccountTools(n)
 	n.rttTools = NewRTTTools(n)
-
+	n.objectTools = NewObjectTools(n)
 	logger.Info("Initialized NATS server tools")
 
 	return n, nil
@@ -108,4 +109,9 @@ func (n *NATSServerTools) AccountTools() ToolCategory {
 // RTTTools returns the RTT tools category
 func (n *NATSServerTools) RTTTools() ToolCategory {
 	return n.rttTools
+}
+
+// ObjectTools returns the object tools category
+func (n *NATSServerTools) ObjectTools() ToolCategory {
+	return n.objectTools
 }
