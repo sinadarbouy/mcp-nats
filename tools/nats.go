@@ -17,6 +17,7 @@ type NATSServerTools struct {
 	kvTools      *KVTools
 	publishTools *PublishTools
 	accountTools *AccountTools
+	rttTools     *RTTTools
 }
 
 // NewNATSServerTools creates a new instance of NATSServerTools
@@ -31,6 +32,7 @@ func NewNATSServerTools() (*NATSServerTools, error) {
 	n.kvTools = NewKVTools(n)
 	n.publishTools = NewPublishTools(n)
 	n.accountTools = NewAccountTools(n)
+	n.rttTools = NewRTTTools(n)
 
 	logger.Info("Initialized NATS server tools")
 
@@ -101,4 +103,9 @@ func (n *NATSServerTools) PublishTools() ToolCategory {
 // AccountTools returns the account tools category
 func (n *NATSServerTools) AccountTools() ToolCategory {
 	return n.accountTools
+}
+
+// RTTTools returns the RTT tools category
+func (n *NATSServerTools) RTTTools() ToolCategory {
+	return n.rttTools
 }

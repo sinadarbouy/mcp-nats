@@ -20,6 +20,7 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
   - List and inspect NATS servers
   - Server health monitoring and ping
   - Server information retrieval
+  - Round-trip time (RTT) measurement
 - Stream Operations (Read-only Operations)
   - View and inspect NATS streams
   - Stream state and information queries
