@@ -79,7 +79,7 @@ go build -o mcp-nats ./cmd/mcp-nats
 ## Configuration
 
 ### Environment Variables
-- `NATS_URL`: The URL of your NATS server (e.g., `nats://localhost:4222`)
+- `NATS_URL`: The URL of your NATS server (e.g., `localhost:4222`)
 - `NATS_<ACCOUNT>_CREDS`: Base64 encoded NATS credentials for each account
   - Example: `NATS_SYS_CREDS`, `NATS_A_CREDS`
 
@@ -192,6 +192,10 @@ make run       # Run in stdio mode
 make run-sse   # Run with SSE transport
 make lint      # Run linters
 ```
+
+## Testing with stdio Transport
+
+For detailed instructions on how to test the MCP server using stdio transport, please refer to our [Stdio Example Guide](docs/stdio/stdio_example.md).
 
 ## Resources
 - [Model Context Protocol Documentation](https://modelcontextprotocol.io/introduction)
