@@ -23,3 +23,7 @@ run: ## Run the MCP server in stdio mode.
 .PHONY: run-sse
 run-sse: ## Run with debug level and JSON format
 	go run ./cmd/mcp-nats --transport sse --log-level debug
+
+.PHONY: test
+test: ## Run tests
+	go test -v ./...

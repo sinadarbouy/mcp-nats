@@ -2,3 +2,4 @@
 .cursor/*
 mcp-nats
 venv/*
+tasks/*
