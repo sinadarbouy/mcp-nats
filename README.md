@@ -2,6 +2,10 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [NATS](https://nats.io/) messaging system integration
 
+[![MCP Review Certified](https://img.shields.io/badge/MCP%20Review-Certified-brightgreen)](https://mcpreview.com/mcp-servers/sinadarbouy/mcp-nats)
+
+**This MCP server is certified by [MCP Review](https://mcpreview.com/mcp-servers/sinadarbouy/mcp-nats).**
+
 ## Overview
 
 This project provides a Model Context Protocol (MCP) server for NATS, enabling AI models and applications to interact with NATS messaging systems through a standardized interface. It exposes a comprehensive set of tools for interacting with NATS servers, making it ideal for AI-powered applications that need to work with messaging systems.
