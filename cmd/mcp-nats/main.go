@@ -24,10 +24,13 @@ const (
 
 // Config holds all configuration for the server
 type Config struct {
-	Transport string
-	SSEAddr   string
-	LogLevel  string
-	JSONLogs  bool
+	Transport        string
+	SSEAddr          string
+	LogLevel         string
+	JSONLogs         bool
+	NoAuthentication bool
+	NATSUser         string
+	NATSPassword     string
 }
 
 // validateConfig ensures all config values are valid
@@ -63,6 +66,23 @@ func newServer() (*server.MCPServer, error) {
 }
 
 func run(ctx context.Context, cfg *Config) error {
+	// Set environment variables for authentication configuration
+	if cfg.NoAuthentication {
+		if err := os.Setenv("NATS_NO_AUTHENTICATION", "true"); err != nil {
+			return fmt.Errorf("failed to set NATS_NO_AUTHENTICATION env var: %w", err)
+		}
+	}
+	if cfg.NATSUser != "" {
+		if err := os.Setenv("NATS_USER", cfg.NATSUser); err != nil {
+			return fmt.Errorf("failed to set NATS_USER env var: %w", err)
+		}
+	}
+	if cfg.NATSPassword != "" {
+		if err := os.Setenv("NATS_PASSWORD", cfg.NATSPassword); err != nil {
+			return fmt.Errorf("failed to set NATS_PASSWORD env var: %w", err)
+		}
+	}
+
 	s, err := newServer()
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
@@ -111,6 +131,9 @@ func main() {
 	flag.StringVar(&cfg.SSEAddr, "sse-address", "0.0.0.0:8000", "Address for SSE server to listen on")
 	flag.StringVar(&cfg.LogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	flag.BoolVar(&cfg.JSONLogs, "json-logs", false, "Output logs in JSON format")
+	flag.BoolVar(&cfg.NoAuthentication, "no-authentication", false, "Allow anonymous connections without credentials")
+	flag.StringVar(&cfg.NATSUser, "user", "", "NATS username or token (can also be set via NATS_USER env var)")
+	flag.StringVar(&cfg.NATSPassword, "password", "", "NATS password (can also be set via NATS_PASSWORD env var)")
 	flag.Parse()
 
 	// Validate configuration

@@ -47,15 +47,29 @@ func (n *NATSServerTools) GetExecutor(ctx context.Context, accountName string) (
 		return executor, nil
 	}
 
-	// Get credentials from context
-	creds, err := mcpnats.GetCredsFromContext(ctx, accountName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get credentials for account %s: %v", accountName, err)
-	}
-
 	natsURL, err := mcpnats.GetNatsURLFromContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get NATS URL: %w", err)
+	}
+
+	// Try to get authentication strategy first (for anonymous/user-pass auth)
+	authStrategy, err := mcpnats.GetAuthStrategyFromContext(ctx)
+	if err == nil {
+		// Use authentication strategy
+		executor := &common.NATSExecutor{
+			URL:      natsURL,
+			Strategy: authStrategy,
+		}
+
+		// Cache the executor
+		n.executors[accountName] = executor
+		return executor, nil
+	}
+
+	// Fall back to credentials-based authentication
+	creds, err := mcpnats.GetCredsFromContext(ctx, accountName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get credentials for account %s: %v", accountName, err)
 	}
 
 	// Create new executor
@@ -75,7 +89,7 @@ func (n *NATSServerTools) Cleanup() {
 		if err := executor.Cleanup(); err != nil {
 			logger.Error("Failed to cleanup executor",
 				"error", err,
-				"account", executor.Creds.AccountName,
+				"account", executor.GetAccountName(),
 			)
 		}
 	}
