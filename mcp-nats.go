@@ -28,6 +28,14 @@ const (
 
 type natsURLKey struct{}
 type natsCredsKey struct{}
+type natsAuthStrategyKey struct{}
+
+// NATSAuthStrategy defines the interface for different authentication strategies
+type NATSAuthStrategy interface {
+	BuildArgs(baseURL string) []string
+	GetAccountName() string
+	Cleanup() error
+}
 
 func urlFromHeaders(req *http.Request) (string, string) {
 	if req == nil {
@@ -51,6 +59,11 @@ func WithNatsURL(ctx context.Context, url string) context.Context {
 // WithNatsCreds adds NATS credentials to the context
 func WithNatsCreds(ctx context.Context, creds map[string]common.NATSCreds) context.Context {
 	return context.WithValue(ctx, natsCredsKey{}, creds)
+}
+
+// WithNatsAuthConfig adds NATS authentication configuration to the context
+func WithNatsAuthConfig(ctx context.Context, authStrategy common.NATSAuthStrategy) context.Context {
+	return context.WithValue(ctx, natsAuthStrategyKey{}, authStrategy)
 }
 
 // natsURLFromContext extracts the nats url from the context.
@@ -81,6 +94,19 @@ func natsCredsFromContext(ctx context.Context) (map[string]common.NATSCreds, err
 	return creds, nil
 }
 
+// natsAuthStrategyFromContext extracts the NATS authentication strategy from the context
+func natsAuthStrategyFromContext(ctx context.Context) (common.NATSAuthStrategy, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("context is nil")
+	}
+
+	authStrategy, ok := ctx.Value(natsAuthStrategyKey{}).(common.NATSAuthStrategy)
+	if !ok {
+		return nil, fmt.Errorf("nats authentication strategy not found in context")
+	}
+	return authStrategy, nil
+}
+
 // ExtractNatsInfoFromHeaders is a SSEContextFunc that extracts nats configuration
 // from request headers and injects a configured client into the context.
 var ExtractNatsInfoFromHeaders server.SSEContextFunc = func(ctx context.Context, req *http.Request) context.Context {
@@ -101,14 +127,29 @@ var ExtractNatsInfoFromHeaders server.SSEContextFunc = func(ctx context.Context,
 		u = defaultNatsURL
 	}
 
-	// Get NATS credentials
-	creds, err := common.GetCredsFromEnv()
-	if err != nil {
-		slog.Error("Failed to get NATS credentials", "error", err)
-		creds = make(map[string]common.NATSCreds)
-	}
+	// Check for no-authentication flag
+	noAuth := os.Getenv("NATS_NO_AUTHENTICATION") == "true"
 
-	return WithNatsCreds(WithNatsURL(ctx, u), creds)
+	// Check for user/password authentication
+	user, password := common.GetUserPassFromEnv()
+
+	if noAuth {
+		// Anonymous connection
+		authStrategy := common.NewAnonymousAuthStrategy()
+		return WithNatsAuthConfig(WithNatsURL(ctx, u), authStrategy)
+	} else if user != "" && password != "" {
+		// User/password authentication
+		authStrategy := common.NewUserPassAuthStrategy(user, password)
+		return WithNatsAuthConfig(WithNatsURL(ctx, u), authStrategy)
+	} else {
+		// Credentials-based authentication (existing behavior)
+		creds, err := common.GetCredsFromEnv()
+		if err != nil {
+			slog.Error("Failed to get NATS credentials", "error", err)
+			creds = make(map[string]common.NATSCreds)
+		}
+		return WithNatsCreds(WithNatsURL(ctx, u), creds)
+	}
 }
 
 // ExtractNatsInfoFromEnv is a StdioContextFunc that extracts NATS configuration
@@ -128,14 +169,29 @@ var ExtractNatsInfoFromEnv server.StdioContextFunc = func(ctx context.Context) c
 		u = defaultNatsURL
 	}
 
-	// Get NATS credentials
-	creds, err := common.GetCredsFromEnv()
-	if err != nil {
-		slog.Error("Failed to get NATS credentials from environment", "error", err)
-		creds = make(map[string]common.NATSCreds)
-	}
+	// Check for no-authentication flag
+	noAuth := os.Getenv("NATS_NO_AUTHENTICATION") == "true"
 
-	return WithNatsCreds(WithNatsURL(ctx, u), creds)
+	// Check for user/password authentication
+	user, password := common.GetUserPassFromEnv()
+
+	if noAuth {
+		// Anonymous connection
+		authStrategy := common.NewAnonymousAuthStrategy()
+		return WithNatsAuthConfig(WithNatsURL(ctx, u), authStrategy)
+	} else if user != "" && password != "" {
+		// User/password authentication
+		authStrategy := common.NewUserPassAuthStrategy(user, password)
+		return WithNatsAuthConfig(WithNatsURL(ctx, u), authStrategy)
+	} else {
+		// Credentials-based authentication (existing behavior)
+		creds, err := common.GetCredsFromEnv()
+		if err != nil {
+			slog.Error("Failed to get NATS credentials from environment", "error", err)
+			creds = make(map[string]common.NATSCreds)
+		}
+		return WithNatsCreds(WithNatsURL(ctx, u), creds)
+	}
 }
 
 // ComposeSSEContextFuncs composes multiple SSEContextFuncs into a single function.
@@ -194,6 +250,17 @@ func GetCredsFromContext(ctx context.Context, accountName string) (common.NATSCr
 	}
 
 	return common.NATSCreds{}, fmt.Errorf("no credentials found for account %s", accountName)
+}
+
+// GetAuthStrategyFromContext retrieves NATS authentication strategy from the context.
+// It returns an error if:
+// - The NATS authentication strategy is not found in the context
+func GetAuthStrategyFromContext(ctx context.Context) (common.NATSAuthStrategy, error) {
+	authStrategy, err := natsAuthStrategyFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get NATS authentication strategy: %w", err)
+	}
+	return authStrategy, nil
 }
 
 // GetNatsURLFromContext retrieves the NATS URL from the context.

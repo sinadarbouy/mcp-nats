@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/sinadarbouy/mcp-nats/tools/common"
 )
 
 // PublishTools represents all NATS publish-related tools
@@ -25,8 +26,16 @@ func NewPublishTools(nats *NATSServerTools) *PublishTools {
 	}
 }
 
+// isAccountNameRequired determines if account_name is required based on auth strategy
+func (p *PublishTools) isAccountNameRequired() bool {
+	return common.IsAccountNameRequired()
+}
+
 // GetTools implements the ToolCategory interface
 func (p *PublishTools) GetTools() []Tool {
+	// Determine if we need account_name based on authentication strategy
+	needsAccountName := p.isAccountNameRequired()
+
 	return []Tool{
 		{
 			Tool: mcp.Tool{
@@ -34,44 +43,54 @@ func (p *PublishTools) GetTools() []Tool {
 				Description: "Generic data publish utility",
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
-					Properties: map[string]interface{}{
-						"account_name": map[string]interface{}{
-							"type":        "string",
-							"description": "The NATS account to use",
-						},
-						"subject": map[string]interface{}{
-							"type":        "string",
-							"description": "Subject to publish to",
-						},
-						"body": map[string]interface{}{
-							"type":        "string",
-							"description": "Message body",
-						},
-						"reply": map[string]interface{}{
-							"type":        "string",
-							"description": "Sets a custom reply to subject",
-						},
-						"header": map[string]interface{}{
-							"type":        "array",
-							"items":       map[string]interface{}{"type": "string"},
-							"description": "Adds headers to the message",
-						},
-						"count": map[string]interface{}{
-							"type":        "integer",
-							"description": "Publish multiple messages",
-							"default":     1,
-						},
-						"sleep": map[string]interface{}{
-							"type":        "string",
-							"description": "When publishing multiple messages, sleep between publishes",
-						},
-						"force_stdin": map[string]interface{}{
-							"type":        "boolean",
-							"description": "Force reading from stdin",
-							"default":     false,
-						},
-					},
-					Required: []string{"account_name", "subject"},
+					Properties: func() map[string]interface{} {
+						props := map[string]interface{}{
+							"subject": map[string]interface{}{
+								"type":        "string",
+								"description": "Subject to publish to",
+							},
+							"body": map[string]interface{}{
+								"type":        "string",
+								"description": "Message body",
+							},
+							"reply": map[string]interface{}{
+								"type":        "string",
+								"description": "Sets a custom reply to subject",
+							},
+							"header": map[string]interface{}{
+								"type":        "array",
+								"items":       map[string]interface{}{"type": "string"},
+								"description": "Adds headers to the message",
+							},
+							"count": map[string]interface{}{
+								"type":        "integer",
+								"description": "Publish multiple messages",
+								"default":     1,
+							},
+							"sleep": map[string]interface{}{
+								"type":        "string",
+								"description": "When publishing multiple messages, sleep between publishes",
+							},
+							"force_stdin": map[string]interface{}{
+								"type":        "boolean",
+								"description": "Force reading from stdin",
+								"default":     false,
+							},
+						}
+						if needsAccountName {
+							props["account_name"] = map[string]interface{}{
+								"type":        "string",
+								"description": "The NATS account to use (required for credentials-based authentication)",
+							}
+						}
+						return props
+					}(),
+					Required: func() []string {
+						if needsAccountName {
+							return []string{"account_name", "subject"}
+						}
+						return []string{"subject"}
+					}(),
 				},
 			},
 			Handler: p.publishHandler(),
@@ -101,9 +120,9 @@ func generateRandomString(min, max int) string {
 
 func (p *PublishTools) publishHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
-		if !ok {
-			return nil, fmt.Errorf("missing account_name")
+		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		if err != nil {
+			return nil, err
 		}
 
 		subject, ok := request.Params.Arguments["subject"].(string)

@@ -2,11 +2,11 @@ package tools
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/sinadarbouy/mcp-nats/tools/common"
 )
 
 // ServerTools represents all NATS server-related tools
@@ -21,8 +21,16 @@ func NewServerTools(nats *NATSServerTools) *ServerTools {
 	}
 }
 
+// isAccountNameRequired determines if account_name is required based on auth strategy
+func (s *ServerTools) isAccountNameRequired() bool {
+	return common.IsAccountNameRequired()
+}
+
 // GetTools implements the ToolCategory interface
 func (s *ServerTools) GetTools() []Tool {
+	// Determine if we need account_name based on authentication strategy
+	needsAccountName := s.isAccountNameRequired()
+
 	return []Tool{
 		{
 			Tool: mcp.Tool{
@@ -30,17 +38,27 @@ func (s *ServerTools) GetTools() []Tool {
 				Description: "Get NATS known server list",
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
-					Properties: map[string]interface{}{
-						"account_name": map[string]interface{}{
-							"type":        "string",
-							"description": "The NATS account to use",
-						},
-						"expect": map[string]interface{}{
-							"type":        "integer",
-							"description": "How many servers to expect",
-						},
-					},
-					Required: []string{"account_name"},
+					Properties: func() map[string]interface{} {
+						props := map[string]interface{}{
+							"expect": map[string]interface{}{
+								"type":        "integer",
+								"description": "How many servers to expect",
+							},
+						}
+						if needsAccountName {
+							props["account_name"] = map[string]interface{}{
+								"type":        "string",
+								"description": "The NATS account to use (required for credentials-based authentication)",
+							}
+						}
+						return props
+					}(),
+					Required: func() []string {
+						if needsAccountName {
+							return []string{"account_name"}
+						}
+						return []string{}
+					}(),
 				},
 			},
 			Handler: s.serverListHandler(),
@@ -51,17 +69,27 @@ func (s *ServerTools) GetTools() []Tool {
 				Description: "Get NATS server info",
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
-					Properties: map[string]interface{}{
-						"account_name": map[string]interface{}{
-							"type":        "string",
-							"description": "The NATS account to use",
-						},
-						"server": map[string]interface{}{
-							"type":        "string",
-							"description": "Server ID or Name to inspect",
-						},
-					},
-					Required: []string{"account_name"},
+					Properties: func() map[string]interface{} {
+						props := map[string]interface{}{
+							"server": map[string]interface{}{
+								"type":        "string",
+								"description": "Server ID or Name to inspect",
+							},
+						}
+						if needsAccountName {
+							props["account_name"] = map[string]interface{}{
+								"type":        "string",
+								"description": "The NATS account to use (required for credentials-based authentication)",
+							}
+						}
+						return props
+					}(),
+					Required: func() []string {
+						if needsAccountName {
+							return []string{"account_name"}
+						}
+						return []string{}
+					}(),
 				},
 			},
 			Handler: s.serverInfoHandler(),
@@ -72,17 +100,27 @@ func (s *ServerTools) GetTools() []Tool {
 				Description: "Ping NATS server",
 				InputSchema: mcp.ToolInputSchema{
 					Type: "object",
-					Properties: map[string]interface{}{
-						"account_name": map[string]interface{}{
-							"type":        "string",
-							"description": "The NATS account to use",
-						},
-						"expect": map[string]interface{}{
-							"type":        "integer",
-							"description": "How many servers to expect",
-						},
-					},
-					Required: []string{"account_name"},
+					Properties: func() map[string]interface{} {
+						props := map[string]interface{}{
+							"expect": map[string]interface{}{
+								"type":        "integer",
+								"description": "How many servers to expect",
+							},
+						}
+						if needsAccountName {
+							props["account_name"] = map[string]interface{}{
+								"type":        "string",
+								"description": "The NATS account to use (required for credentials-based authentication)",
+							}
+						}
+						return props
+					}(),
+					Required: func() []string {
+						if needsAccountName {
+							return []string{"account_name"}
+						}
+						return []string{}
+					}(),
 				},
 			},
 			Handler: s.serverPingHandler(),
@@ -97,9 +135,9 @@ func (s *ServerTools) GetTools() []Tool {
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
-		if !ok {
-			return nil, fmt.Errorf("missing account_name")
+		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		if err != nil {
+			return nil, err
 		}
 
 		executor, err := s.nats.GetExecutor(ctx, accountName)
@@ -129,10 +167,11 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 //	[<server>]  Server ID or Name to inspect
 func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
-		if !ok {
-			return nil, fmt.Errorf("missing account_name")
+		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		if err != nil {
+			return nil, err
 		}
+
 		executor, err := s.nats.GetExecutor(ctx, accountName)
 		if err != nil {
 			return nil, err
@@ -159,9 +198,9 @@ func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverPingHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
-		if !ok {
-			return nil, fmt.Errorf("missing account_name")
+		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		if err != nil {
+			return nil, err
 		}
 
 		executor, err := s.nats.GetExecutor(ctx, accountName)

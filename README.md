@@ -86,12 +86,32 @@ go build -o mcp-nats ./cmd/mcp-nats
 - `NATS_URL`: The URL of your NATS server (e.g., `localhost:4222`)
 - `NATS_<ACCOUNT>_CREDS`: Base64 encoded NATS credentials for each account
   - Example: `NATS_SYS_CREDS`, `NATS_A_CREDS`
+- `NATS_NO_AUTHENTICATION`: Set to "true" to enable anonymous connections (no credentials required)
+- `NATS_USER`: Username or token for user/password authentication
+- `NATS_PASSWORD`: Password for user/password authentication
 
 ### Command Line Flags
 - `--transport`: Transport type (stdio or sse), default: stdio
 - `--sse-address`: Address for SSE server to listen on, default: 0.0.0.0:8000
 - `--log-level`: Log level (debug, info, warn, error), default: info
 - `--json-logs`: Output logs in JSON format, default: false
+- `--no-authentication`: Allow anonymous connections without credentials
+- `--user`: NATS username or token (can also be set via NATS_USER env var)
+- `--password`: NATS password (can also be set via NATS_PASSWORD env var)
+
+### Authentication Methods
+
+The MCP NATS server supports three authentication methods:
+
+1. **Credentials-based Authentication** (default): Uses NATS credentials files
+   - Set `NATS_<ACCOUNT>_CREDS` environment variables
+   - Requires `account_name` parameter in all tools
+
+2. **User/Password Authentication**: Uses username and password
+   - Set `NATS_USER` and `NATS_PASSWORD` environment variables or use `--user` and `--password` flags
+
+3. **Anonymous Authentication**: No authentication required
+   - Set `NATS_NO_AUTHENTICATION=true` environment variable or use `--no-authentication` flag
 
 ### Example Usage
 ```sh
@@ -103,6 +123,16 @@ go build -o mcp-nats ./cmd/mcp-nats
 
 # Run with custom SSE address
 ./mcp-nats --transport sse --sse-address localhost:9000
+
+# Run with anonymous authentication
+./mcp-nats --no-authentication
+
+# Run with user/password authentication
+./mcp-nats --user myuser --password mypass
+
+# Run with environment variables for authentication
+NATS_NO_AUTHENTICATION=true ./mcp-nats
+NATS_USER=myuser NATS_PASSWORD=mypass ./mcp-nats
 ```
 
 ### Using VSCode with remote MCP server
@@ -124,7 +154,7 @@ cursor
   "mcpServers": {
     "nats": {
       "env": {
-        "NATS_URL": "localhost:42222",
+        "NATS_URL": "nats://localhost:42222",
         "NATS_SYS_CREDS": "<base64 of SYS account creds>"
         "NATS_A_CREDS": "<base64 of A account creds>"
       },
@@ -133,6 +163,38 @@ cursor
   }
 }
 ```
+
+**Anonymous Authentication:**
+```json
+{
+  "mcpServers": {
+    "nats": {
+      "env": {
+        "NATS_URL": "nats://localhost:42222",
+        "NATS_NO_AUTHENTICATION": "true"
+      },
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
+**User/Password Authentication:**
+```json
+{
+  "mcpServers": {
+    "nats": {
+      "env": {
+        "NATS_URL": "nats://localhost:42222",
+        "NATS_USER": "myuser",
+        "NATS_PASSWORD": "mypass"
+      },
+      "url": "http://localhost:8000/sse"
+    }
+  }
+}
+```
+
 If using the binary:
 ```json
 {
@@ -144,15 +206,56 @@ If using the binary:
         "stdio"
       ],
       "env": {
-        "NATS_URL": "localhost:42222",
-        "NATS_SYS_CREDS": "<base64 of SYS account creds>"
+        "NATS_URL": "nats://localhost:42222",
+        "NATS_SYS_CREDS": "<base64 of SYS account creds>",
         "NATS_A_CREDS": "<base64 of A account creds>"
       }
     }
   }
 }
 ```
-if using docker:
+
+**Anonymous Authentication with Binary:**
+```json
+{
+  "mcpServers": {
+    "nats": {
+      "command": "mcp-nats",
+      "args": [
+        "--transport",
+        "stdio",
+        "--no-authentication"
+      ],
+      "env": {
+        "NATS_URL": "nats://localhost:4222"
+      }
+    }
+  }
+}
+```
+
+**User/Password Authentication with Binary:**
+```json
+{
+  "mcpServers": {
+    "nats": {
+      "command": "mcp-nats",
+      "args": [
+        "--transport",
+        "stdio",
+        "--user",
+        "myuser"
+      ],
+      "env": {
+        "NATS_URL": "nats://localhost:4222",
+        "NATS_PASSWORD": "mypass"
+      }
+    }
+  }
+}
+```
+
+**Docker Configuration:**
 ```json
 {
   "mcpServers": {

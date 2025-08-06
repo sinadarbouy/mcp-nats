@@ -35,9 +35,9 @@ func Initialize(cfg Config) {
 	}
 
 	if cfg.JSONFormat {
-		handler = slog.NewJSONHandler(os.Stdout, opts)
+		handler = slog.NewJSONHandler(os.Stderr, opts)
 	} else {
-		handler = slog.NewTextHandler(os.Stdout, opts)
+		handler = slog.NewTextHandler(os.Stderr, opts)
 	}
 
 	defaultLogger = slog.New(handler)
