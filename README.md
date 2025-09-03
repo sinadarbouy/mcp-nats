@@ -1,4 +1,7 @@
 # mcp-nats
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=NATS&config=eyJjb21tYW5kIjoiZG9ja2VyIHJ1biAtaSAtLXJtIC0taW5pdCAtZSBOQVRTX1VSTCAtZSBOQVRTX05PX0FVVEhFTlRJQ0FUSU9OIGNuYWRiL21jcC1uYXRzIC0tdHJhbnNwb3J0IHN0ZGlvIiwiZW52Ijp7Ik5BVFNfVVJMIjoibmF0czovL2xvY2FsaG9zdDo0MjIyIiwiTkFUU19OT19BVVRIRU5USUNBVElPTiI6InRydWUifX0%3D)
+[<img alt="Install in VS Code" src="https://img.shields.io/badge/Install%20in%20VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white&labelColor=007ACC&color=white&logoWidth=24&logoPadding=8">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%7B%22name%22%3A%22NATS%22%2C%22command%22%3A%22docker%22%2C%22args%22%3A%5B%22run%22%2C%22-i%22%2C%22--rm%22%2C%22--init%22%2C%22-e%22%2C%22NATS_URL%22%2C%22-e%22%2C%22NATS_NO_AUTHENTICATION%22%2C%22cnadb%2Fmcp-nats%22%2C%22--transport%22%2C%22stdio%22%5D%2C%22env%22%3A%7B%22NATS_URL%22%3A%22nats%3A%2F%2Flocalhost%3A4222%22%2C%22NATS_NO_AUTHENTICATION%22%3A%22true%22%7D%7D)
+
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server for [NATS](https://nats.io/) messaging system integration
 
