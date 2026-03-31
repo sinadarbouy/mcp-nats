@@ -1,0 +1,16 @@
+apiVersion: v2
+name: mcp-nats
+description: MCP server for NATS messaging system.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+kubeVersion: "^1.25.0-0"
+home: https://github.com/sinadarbouy/mcp-nats
+sources:
+  - https://github.com/sinadarbouy/mcp-nats
+keywords:
+  - mcp
+  - nats
+  - messaging
+maintainers:
+  - name: sinadarbouy

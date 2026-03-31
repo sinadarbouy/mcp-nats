@@ -1,0 +1,210 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mcp-nats.fullname" . }}
+  namespace: {{ include "mcp-nats.namespace" . }}
+  labels:
+    {{- include "mcp-nats.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mcp-server
+    {{- with .Values.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicas }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "mcp-nats.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mcp-server
+  {{- with .Values.deploymentStrategy }}
+  strategy:
+    {{- toYaml . | trim | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- include "mcp-nats.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mcp-server
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- $allPullSecrets := concat .Values.global.imagePullSecrets .Values.imagePullSecrets }}
+      {{- if $allPullSecrets }}
+      imagePullSecrets:
+        {{- include "mcp-nats.imagePullSecrets" (dict "root" . "imagePullSecrets" .Values.imagePullSecrets) | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mcp-nats.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+      {{- with .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.securityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.runtimeClassName }}
+      runtimeClassName: {{ . }}
+      {{- end }}
+      {{- with .Values.schedulerName }}
+      schedulerName: {{ . }}
+      {{- end }}
+      {{- if or .Values.initContainers .Values.extraInitContainers }}
+      initContainers:
+        {{- with .Values.initContainers }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.extraInitContainers }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      containers:
+        - name: mcp-nats
+          {{- $registry := .Values.image.registry -}}
+          {{- if $registry }}
+          image: "{{ $registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- else }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- end }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - --transport
+            - {{ .Values.server.transport | quote }}
+            - --address
+            - {{ .Values.server.address | quote }}
+            {{- if eq .Values.server.transport "streamable-http" }}
+            - --endpoint-path
+            - {{ .Values.server.endpointPath | quote }}
+            {{- end }}
+            {{- with .Values.args }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.extraArgs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: mcp-http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+            - name: NATS_URL
+              value: {{ .Values.nats.url | quote }}
+            - name: NATS_NO_AUTHENTICATION
+              value: {{ ternary "true" "false" .Values.nats.noAuthentication | quote }}
+            {{- if .Values.auth.existingSecret.name }}
+            - name: NATS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.existingSecret.name }}
+                  key: {{ .Values.auth.existingSecret.userKey }}
+            - name: NATS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.existingSecret.name }}
+                  key: {{ .Values.auth.existingSecret.passwordKey }}
+            {{- else if .Values.auth.createSecret }}
+            - name: NATS_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp-nats.fullname" . }}
+                  key: NATS_USER
+            - name: NATS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "mcp-nats.fullname" . }}
+                  key: NATS_PASSWORD
+            {{- end }}
+            {{- range .Values.auth.extraSecretEnv }}
+            - name: {{ .envName | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .secretName }}
+                  key: {{ .secretKey }}
+            {{- end }}
+            {{- range $key, $value := .Values.env }}
+            - name: {{ $key | quote }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $value := .Values.envValueFrom }}
+            - name: {{ $key | quote }}
+              valueFrom:
+                {{- toYaml $value | nindent 16 }}
+            {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.lifecycle }}
+          lifecycle:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- with .Values.extraContainers }}
+        {{- tpl (toYaml .) $ | nindent 8 }}
+        {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{- end }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -195,7 +195,7 @@ func (a *AccountTools) GetTools() []Tool {
 
 func (a *AccountTools) accountInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -217,7 +217,7 @@ func (a *AccountTools) accountInfoHandler() server.ToolHandlerFunc {
 
 func (a *AccountTools) accountReportConnectionsHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -230,17 +230,17 @@ func (a *AccountTools) accountReportConnectionsHandler() server.ToolHandlerFunc 
 		args := []string{"account", "report", "connections"}
 
 		// Add sort flag if provided
-		if sort, ok := request.Params.Arguments["sort"].(string); ok {
+		if sort, ok := request.GetArguments()["sort"].(string); ok {
 			args = append(args, fmt.Sprintf("--sort=%s", sort))
 		}
 
 		// Add top flag if provided
-		if top, ok := request.Params.Arguments["top"].(float64); ok {
+		if top, ok := request.GetArguments()["top"].(float64); ok {
 			args = append(args, fmt.Sprintf("--top=%d", int(top)))
 		}
 
 		// Add subject flag if provided
-		if subject, ok := request.Params.Arguments["subject"].(string); ok {
+		if subject, ok := request.GetArguments()["subject"].(string); ok {
 			args = append(args, fmt.Sprintf("--subject=%s", subject))
 		}
 
@@ -254,7 +254,7 @@ func (a *AccountTools) accountReportConnectionsHandler() server.ToolHandlerFunc 
 
 func (a *AccountTools) accountReportStatisticsHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -276,12 +276,12 @@ func (a *AccountTools) accountReportStatisticsHandler() server.ToolHandlerFunc {
 
 func (a *AccountTools) accountBackupHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		target, ok := request.Params.Arguments["target"].(string)
+		target, ok := request.GetArguments()["target"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing target directory")
 		}
@@ -294,12 +294,12 @@ func (a *AccountTools) accountBackupHandler() server.ToolHandlerFunc {
 		args := []string{"account", "backup"}
 
 		// Add check flag if true
-		if check, ok := request.Params.Arguments["check"].(bool); ok && check {
+		if check, ok := request.GetArguments()["check"].(bool); ok && check {
 			args = append(args, "--check")
 		}
 
 		// Add consumers flag (handle both true and false cases)
-		if consumers, ok := request.Params.Arguments["consumers"].(bool); ok {
+		if consumers, ok := request.GetArguments()["consumers"].(bool); ok {
 			if consumers {
 				args = append(args, "--consumers")
 			} else {
@@ -308,12 +308,12 @@ func (a *AccountTools) accountBackupHandler() server.ToolHandlerFunc {
 		}
 
 		// Add force flag if true
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "--force")
 		}
 
 		// Add critical-warnings flag if true
-		if criticalWarnings, ok := request.Params.Arguments["critical_warnings"].(bool); ok && criticalWarnings {
+		if criticalWarnings, ok := request.GetArguments()["critical_warnings"].(bool); ok && criticalWarnings {
 			args = append(args, "--critical-warnings")
 		}
 
@@ -330,12 +330,12 @@ func (a *AccountTools) accountBackupHandler() server.ToolHandlerFunc {
 
 func (a *AccountTools) accountRestoreHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		directory, ok := request.Params.Arguments["directory"].(string)
+		directory, ok := request.GetArguments()["directory"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing directory")
 		}
@@ -348,12 +348,12 @@ func (a *AccountTools) accountRestoreHandler() server.ToolHandlerFunc {
 		args := []string{"account", "restore"}
 
 		// Add cluster flag if provided
-		if cluster, ok := request.Params.Arguments["cluster"].(string); ok && cluster != "" {
+		if cluster, ok := request.GetArguments()["cluster"].(string); ok && cluster != "" {
 			args = append(args, fmt.Sprintf("--cluster=%s", cluster))
 		}
 
 		// Add tags if provided
-		if tags, ok := request.Params.Arguments["tags"].([]interface{}); ok {
+		if tags, ok := request.GetArguments()["tags"].([]interface{}); ok {
 			for _, tag := range tags {
 				if strTag, ok := tag.(string); ok && strTag != "" {
 					args = append(args, fmt.Sprintf("--tag=%s", strTag))
@@ -374,7 +374,7 @@ func (a *AccountTools) accountRestoreHandler() server.ToolHandlerFunc {
 
 func (a *AccountTools) accountTLSHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -387,17 +387,17 @@ func (a *AccountTools) accountTLSHandler() server.ToolHandlerFunc {
 		args := []string{"account", "tls"}
 
 		// Add expire-warn flag if provided
-		if expireWarn, ok := request.Params.Arguments["expire_warn"].(string); ok && expireWarn != "" {
+		if expireWarn, ok := request.GetArguments()["expire_warn"].(string); ok && expireWarn != "" {
 			args = append(args, fmt.Sprintf("--expire-warn=%s", expireWarn))
 		}
 
 		// Add ocsp flag if true
-		if ocsp, ok := request.Params.Arguments["ocsp"].(bool); ok && ocsp {
+		if ocsp, ok := request.GetArguments()["ocsp"].(bool); ok && ocsp {
 			args = append(args, "--ocsp")
 		}
 
 		// Add pem flag (handle both true and false cases)
-		if pem, ok := request.Params.Arguments["pem"].(bool); ok {
+		if pem, ok := request.GetArguments()["pem"].(bool); ok {
 			if pem {
 				args = append(args, "--pem")
 			} else {

@@ -64,7 +64,7 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
   - Safe, read-only operations for AI interaction with NATS
 
 ## Requirements
-- Go 1.24 or later
+- Go 1.25 or later
 - NATS server (accessible via URL)
 - NATS credentials for authentication
 - MCP-compatible client (e.g., Claude Desktop, or other MCP clients)
@@ -83,6 +83,81 @@ cd mcp-nats
 go build -o mcp-nats ./cmd/mcp-nats
 ```
 
+### Helm Chart (Kubernetes)
+The Helm chart is available at `deploy/charts/mcp-nats`.
+
+Install with defaults:
+```sh
+helm install mcp-nats ./deploy/charts/mcp-nats
+```
+
+Streamable HTTP mode with explicit server values:
+```sh
+helm install mcp-nats ./deploy/charts/mcp-nats \
+  --set server.transport=streamable-http \
+  --set server.address=0.0.0.0:8000 \
+  --set server.endpointPath=/mcp
+```
+
+Anonymous authentication example:
+```sh
+helm install mcp-nats ./deploy/charts/mcp-nats \
+  --set nats.url=nats://nats.default.svc:4222 \
+  --set nats.noAuthentication=true
+```
+
+User/password authentication example with existing secret:
+```sh
+kubectl create secret generic mcp-nats-auth \
+  --from-literal=NATS_USER=myuser \
+  --from-literal=NATS_PASSWORD=mypass
+
+helm install mcp-nats ./deploy/charts/mcp-nats \
+  --set nats.url=nats://nats.default.svc:4222 \
+  --set nats.noAuthentication=false \
+  --set auth.existingSecret.name=mcp-nats-auth
+```
+
+### Tilt Integration Test (Docker Desktop Kubernetes)
+Use Tilt to deploy both official NATS and the local `mcp-nats` chart for end-to-end auth testing.
+
+Prerequisites:
+- Tilt installed
+- Helm installed
+- Docker Desktop Kubernetes enabled
+- Current kube context set to `docker-desktop`
+
+Start the integration stack:
+```sh
+tilt up
+```
+
+This uses:
+- `Tiltfile`
+- `deploy/tilt/nats-values.yaml`
+- `deploy/tilt/mcp-nats-values.yaml`
+- a local image build with `deploy/tilt/Dockerfile.tilt` before Helm deploy
+
+Stop and clean up:
+```sh
+tilt down
+helm uninstall -n mcp-nats-tilt nats mcp-nats
+kubectl delete namespace mcp-nats-tilt --ignore-not-found
+```
+
+Quick verification commands:
+```sh
+kubectl get pods,svc -n mcp-nats-tilt
+kubectl logs -n mcp-nats-tilt deploy/mcp-nats-mcp-nats
+kubectl logs -n mcp-nats-tilt statefulset/nats
+kubectl port-forward -n mcp-nats-tilt svc/mcp-nats-mcp-nats 8000:8000
+```
+
+Auth smoke test:
+- NATS is configured with `mcpuser` / `mcppassword` in `deploy/tilt/nats-values.yaml`.
+- `mcp-nats` uses the same credentials via chart-managed secret in `deploy/tilt/mcp-nats-values.yaml`.
+- If credentials mismatch, `mcp-nats` logs will show connection/authentication failures.
+
 ## Configuration
 
 ### Environment Variables
@@ -94,13 +169,37 @@ go build -o mcp-nats ./cmd/mcp-nats
 - `NATS_PASSWORD`: Password for user/password authentication
 
 ### Command Line Flags
-- `--transport`: Transport type (stdio or sse), default: stdio
-- `--sse-address`: Address for SSE server to listen on, default: 0.0.0.0:8000
+- `--transport`: Transport type (stdio, sse, or streamable-http), default: streamable-http
+- `--address`: Address for HTTP transport to listen on, default: 0.0.0.0:8000
+- `--endpoint-path`: Endpoint path for streamable-http transport, default: /mcp
+- `--sse-address`: Deprecated alias of `--address`
 - `--log-level`: Log level (debug, info, warn, error), default: info
 - `--json-logs`: Output logs in JSON format, default: false
 - `--no-authentication`: Allow anonymous connections without credentials
 - `--user`: NATS username or token (can also be set via NATS_USER env var)
 - `--password`: NATS password (can also be set via NATS_PASSWORD env var)
+
+### Health Endpoints (HTTP transports)
+- `GET /livez`: process liveness check (does not validate NATS dependency)
+- `GET /readyz`: readiness check (validates TCP connectivity to `NATS_URL`)
+- `GET /healthz`: compatibility alias for liveness
+
+These endpoints are available when running with `sse` or `streamable-http` transport.
+
+### Helm Probe Defaults
+The chart now provides default probe and lifecycle settings tuned for safer rollouts:
+- `startupProbe` -> `/livez` with extended startup window
+- `livenessProbe` -> `/livez`
+- `readinessProbe` -> `/readyz`
+- `lifecycle.preStop` -> `sleep 5` to help with endpoint drain before shutdown
+
+Override any of these defaults with custom values:
+```sh
+helm upgrade --install mcp-nats ./deploy/charts/mcp-nats \
+  --set readinessProbe.httpGet.path=/readyz \
+  --set livenessProbe.httpGet.path=/livez \
+  --set startupProbe.failureThreshold=18
+```
 
 ### Authentication Methods
 
@@ -118,14 +217,17 @@ The MCP NATS server supports three authentication methods:
 
 ### Example Usage
 ```sh
-# Run with SSE transport and debug logging
-./mcp-nats --transport sse --log-level debug
+# Run with Streamable HTTP transport (default) and debug logging
+./mcp-nats --log-level debug
+
+# Run with custom Streamable HTTP endpoint path
+./mcp-nats --transport streamable-http --address localhost:9000 --endpoint-path /mcp
 
 # Run with JSON logging
 ./mcp-nats --json-logs
 
-# Run with custom SSE address
-./mcp-nats --transport sse --sse-address localhost:9000
+# Run with SSE transport
+./mcp-nats --transport sse --address localhost:9000
 
 # Run with anonymous authentication
 ./mcp-nats --no-authentication
@@ -144,8 +246,8 @@ Make sure your .vscode/settings.json includes:
 "mcp": {
   "servers": {
     "nats": {
-      "type": "sse",
-      "url": "http://localhost:8000/sse"
+      "type": "streamable-http",
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -161,7 +263,7 @@ cursor
         "NATS_SYS_CREDS": "<base64 of SYS account creds>"
         "NATS_A_CREDS": "<base64 of A account creds>"
       },
-      "url": "http://localhost:8000/sse"
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -176,7 +278,7 @@ cursor
         "NATS_URL": "nats://localhost:42222",
         "NATS_NO_AUTHENTICATION": "true"
       },
-      "url": "http://localhost:8000/sse"
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -192,7 +294,7 @@ cursor
         "NATS_USER": "myuser",
         "NATS_PASSWORD": "mypass"
       },
-      "url": "http://localhost:8000/sse"
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -289,7 +391,7 @@ If using the binary:
 ## Development
 
 ### Prerequisites
-- Go 1.24+
+- Go 1.25+
 - Docker (optional)
 - NATS CLI
 - Understanding of MCP specification

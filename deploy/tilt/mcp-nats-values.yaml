@@ -1,0 +1,25 @@
+image:
+  repository: mcp-nats
+  tag: tilt
+  pullPolicy: IfNotPresent
+
+nats:
+  url: nats://nats:4222
+  noAuthentication: false
+
+auth:
+  createSecret: true
+  secretData:
+    user: mcpuser
+    password: mcppassword
+
+service:
+  enabled: true
+  port: 8000
+
+ingress:
+  enabled: false
+
+route:
+  main:
+    enabled: false

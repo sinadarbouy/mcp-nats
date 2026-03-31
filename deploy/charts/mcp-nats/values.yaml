@@ -1,0 +1,192 @@
+replicas: 1
+
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+
+revisionHistoryLimit: 10
+
+image:
+  registry: ""
+  repository: cnadb/mcp-nats
+  tag: ""
+  pullPolicy: IfNotPresent
+
+global:
+  imagePullSecrets: []
+
+imagePullSecrets: []
+
+containerPort: 8000
+
+server:
+  transport: streamable-http
+  address: 0.0.0.0:8000
+  endpointPath: /mcp
+
+nats:
+  url: nats://localhost:4222
+  noAuthentication: true
+
+auth:
+  existingSecret:
+    name: ""
+    userKey: NATS_USER
+    passwordKey: NATS_PASSWORD
+  createSecret: false
+  secretData:
+    user: ""
+    password: ""
+  extraSecretEnv: []
+  # - envName: NATS_SYS_CREDS
+  #   secretName: my-secret
+  #   secretKey: NATS_SYS_CREDS
+
+extraArgs: []
+command: []
+args: []
+
+env: {}
+envValueFrom: {}
+envFrom: []
+
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: mcp-http
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 2
+  successThreshold: 1
+livenessProbe:
+  httpGet:
+    path: /livez
+    port: mcp-http
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+  successThreshold: 1
+startupProbe:
+  httpGet:
+    path: /livez
+    port: mcp-http
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 12
+  successThreshold: 1
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+  labels: {}
+  automountServiceAccountToken: false
+
+automountServiceAccountToken: true
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 8000
+  annotations: {}
+  labels: {}
+  clusterIP: ""
+  externalIPs: []
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  externalName: ""
+  nodePort: ""
+  extraPorts: []
+  sessionAffinity: ""
+  sessionAffinityConfig: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  labels: {}
+  hosts:
+    - host: mcp-nats.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+route:
+  main:
+    enabled: false
+    apiVersion: ""
+    kind: HTTPRoute
+    annotations: {}
+    labels: {}
+    hostnames: []
+    parentRefs: []
+    matches:
+      - path:
+          type: PathPrefix
+          value: /
+    timeouts: {}
+    filters: []
+    additionalRules: []
+    httpsRedirect: false
+
+resources: {}
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+priorityClassName: ""
+runtimeClassName: ""
+schedulerName: ""
+hostAliases: []
+dnsPolicy: ""
+dnsConfig: {}
+
+podAnnotations: {}
+podLabels: {}
+annotations: {}
+labels: {}
+extraLabels: {}
+
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - sleep 5
+volumeMounts: []
+volumes: []
+initContainers: []
+extraInitContainers: []
+extraContainers: []
+
+serviceMonitor:
+  enabled: false
+  labels: {}
+  annotations: {}
+  interval: 30s
+  scrapeTimeout: 10s
+  path: /metrics
+  relabelings: []
+  metricRelabelings: []
+  namespaceSelector: {}

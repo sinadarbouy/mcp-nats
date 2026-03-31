@@ -1,0 +1,29 @@
+FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+ARG TARGETOS
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} go build -a -installsuffix cgo -o mcp-nats ./cmd/mcp-nats
+RUN go install github.com/nats-io/natscli/nats@latest
+
+FROM debian:bookworm-slim
+
+RUN useradd -r -u 1000 -m mcp-nats
+
+WORKDIR /app
+
+COPY --from=builder --chown=1000:1000 /app/mcp-nats /app/
+COPY --from=builder --chown=1000:1000 /go/bin/nats /usr/local/bin/
+
+USER mcp-nats
+
+EXPOSE 8000
+
+# Helm/Tilt pass transport flags via container args; do not bake flags here or they duplicate K8s args.
+ENTRYPOINT ["/app/mcp-nats"]

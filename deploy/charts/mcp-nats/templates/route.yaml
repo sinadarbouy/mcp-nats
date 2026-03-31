@@ -1,0 +1,60 @@
+{{- if .Values.service.enabled }}
+{{- range $name, $route := .Values.route }}
+{{- if $route.enabled }}
+---
+apiVersion: {{ $route.apiVersion | default (include "mcp-nats.gatewayApi.apiVersion" $) }}
+kind: {{ $route.kind | default "HTTPRoute" }}
+metadata:
+  {{- with $route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  name: {{ template "mcp-nats.fullname" $ }}{{ if ne $name "main" }}-{{ $name }}{{ end }}
+  namespace: {{ template "mcp-nats.namespace" $ }}
+  labels:
+    {{- include "mcp-nats.labels" $ | nindent 4 }}
+    {{- with $route.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- with $route.parentRefs }}
+  parentRefs:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with $route.hostnames }}
+  hostnames:
+    {{- tpl (toYaml .) $ | nindent 4 }}
+  {{- end }}
+  rules:
+    {{- if $route.additionalRules }}
+    {{- tpl (toYaml $route.additionalRules) $ | nindent 4 }}
+    {{- end }}
+    {{- if $route.httpsRedirect }}
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+    {{- else }}
+    - backendRefs:
+        - name: {{ include "mcp-nats.fullname" $ }}
+          port: {{ $.Values.service.port }}
+          group: ""
+          kind: Service
+          weight: 1
+      {{- with $route.filters }}
+      filters:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $route.matches }}
+      matches:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $route.timeouts }}
+      timeouts:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

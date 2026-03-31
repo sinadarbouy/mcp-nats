@@ -2,10 +2,15 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,7 +30,8 @@ const (
 // Config holds all configuration for the server
 type Config struct {
 	Transport        string
-	SSEAddr          string
+	Address          string
+	EndpointPath     string
 	LogLevel         string
 	JSONLogs         bool
 	NoAuthentication bool
@@ -35,13 +41,133 @@ type Config struct {
 
 // validateConfig ensures all config values are valid
 func validateConfig(cfg *Config) error {
-	if cfg.Transport != "stdio" && cfg.Transport != "sse" {
-		return fmt.Errorf("invalid transport type: %s (must be 'stdio' or 'sse')", cfg.Transport)
+	if cfg.Transport != "stdio" && cfg.Transport != "sse" && cfg.Transport != "streamable-http" {
+		return fmt.Errorf("invalid transport type: %s (must be 'stdio', 'sse' or 'streamable-http')", cfg.Transport)
 	}
-	if cfg.Transport == "sse" && cfg.SSEAddr == "" {
-		return fmt.Errorf("sse-address cannot be empty when using sse transport")
+	if (cfg.Transport == "sse" || cfg.Transport == "streamable-http") && cfg.Address == "" {
+		return fmt.Errorf("address cannot be empty when using %s transport", cfg.Transport)
+	}
+	if cfg.Transport == "streamable-http" {
+		if cfg.EndpointPath == "" {
+			return fmt.Errorf("endpoint-path cannot be empty when using streamable-http transport")
+		}
+		if !strings.HasPrefix(cfg.EndpointPath, "/") {
+			return fmt.Errorf("endpoint-path must start with '/'")
+		}
 	}
 	return nil
+}
+
+type httpServer interface {
+	Start(addr string) error
+	Shutdown(ctx context.Context) error
+}
+
+const readinessTimeout = 2 * time.Second
+
+func writeOK(w http.ResponseWriter) {
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("ok"))
+}
+
+func handleLivez(w http.ResponseWriter, _ *http.Request) {
+	writeOK(w)
+}
+
+func handleReadyz(w http.ResponseWriter, _ *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), readinessTimeout)
+	defer cancel()
+
+	if err := checkNATSConnectivity(ctx, os.Getenv("NATS_URL")); err != nil {
+		logger.Warn("Readiness check failed", "error", err)
+		http.Error(w, "nats unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
+	writeOK(w)
+}
+
+func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	// Keep /healthz as a stable alias for liveness checks.
+	handleLivez(w, nil)
+}
+
+func checkNATSConnectivity(ctx context.Context, rawURL string) error {
+	natsURL := strings.TrimSpace(rawURL)
+	if natsURL == "" {
+		natsURL = "localhost:4222"
+	}
+
+	address := natsURL
+	if strings.Contains(natsURL, "://") {
+		parsedURL, err := url.Parse(natsURL)
+		if err != nil {
+			return fmt.Errorf("invalid NATS URL %q: %w", natsURL, err)
+		}
+		if parsedURL.Host == "" {
+			return fmt.Errorf("invalid NATS URL %q: missing host", natsURL)
+		}
+		address = parsedURL.Host
+	}
+
+	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", address)
+	if err != nil {
+		return fmt.Errorf("dial NATS at %s: %w", address, err)
+	}
+
+	if closeErr := conn.Close(); closeErr != nil {
+		logger.Debug("Failed to close readiness probe connection", "error", closeErr)
+	}
+	return nil
+}
+
+func newHTTPMux(mcpPath string, mcpHandler http.Handler) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle(mcpPath, mcpHandler)
+	mux.HandleFunc("/livez", handleLivez)
+	mux.HandleFunc("/readyz", handleReadyz)
+	mux.HandleFunc("/healthz", handleHealthz)
+	return mux
+}
+
+func newSSEHTTPMux(sseSrv *server.SSEServer) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/sse", sseSrv.SSEHandler())
+	mux.Handle("/message", sseSrv.MessageHandler())
+	mux.HandleFunc("/livez", handleLivez)
+	mux.HandleFunc("/readyz", handleReadyz)
+	mux.HandleFunc("/healthz", handleHealthz)
+	return mux
+}
+
+func runHTTPServer(ctx context.Context, srv httpServer, addr, transportName string) error {
+	serverErr := make(chan error, 1)
+	go func() {
+		if err := srv.Start(addr); err != nil {
+			serverErr <- err
+		}
+		close(serverErr)
+	}()
+
+	select {
+	case err := <-serverErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		logger.Info("Shutting down HTTP server", "transport", transportName)
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			return fmt.Errorf("failed to shutdown %s server: %w", transportName, err)
+		}
+		if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	}
 }
 
 func newServer() (*server.MCPServer, error) {
@@ -96,28 +222,32 @@ func run(ctx context.Context, cfg *Config) error {
 		return srv.Listen(ctx, os.Stdin, os.Stdout)
 
 	case "sse":
-		srv := server.NewSSEServer(s, server.WithSSEContextFunc(mcpnats.ComposedSSEContextFunc()))
-		logger.Info("Starting NATS MCP server using SSE transport",
-			"address", cfg.SSEAddr,
+		httpSrv := &http.Server{Addr: cfg.Address}
+		srv := server.NewSSEServer(
+			s,
+			server.WithSSEContextFunc(mcpnats.ComposedSSEContextFunc()),
+			server.WithHTTPServer(httpSrv),
 		)
+		httpSrv.Handler = newSSEHTTPMux(srv)
+		logger.Info("Starting NATS MCP server using SSE transport",
+			"address", cfg.Address,
+		)
+		return runHTTPServer(ctx, srv, cfg.Address, "sse")
 
-		errChan := make(chan error, 1)
-		go func() {
-			if err := srv.Start(cfg.SSEAddr); err != nil {
-				errChan <- fmt.Errorf("server error: %w", err)
-			}
-		}()
+	case "streamable-http":
+		httpSrv := &http.Server{Addr: cfg.Address}
+		srv := server.NewStreamableHTTPServer(s,
+			server.WithHTTPContextFunc(server.HTTPContextFunc(mcpnats.ComposedSSEContextFunc())),
+			server.WithEndpointPath(cfg.EndpointPath),
+			server.WithStreamableHTTPServer(httpSrv),
+		)
+		httpSrv.Handler = newHTTPMux(cfg.EndpointPath, srv)
 
-		// Wait for either context cancellation or server error
-		select {
-		case err := <-errChan:
-			return err
-		case <-ctx.Done():
-			// Give the server some time to shutdown gracefully
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			return srv.Shutdown(shutdownCtx)
-		}
+		logger.Info("Starting NATS MCP server using Streamable HTTP transport",
+			"address", cfg.Address,
+			"endpointPath", cfg.EndpointPath,
+		)
+		return runHTTPServer(ctx, srv, cfg.Address, "streamable-http")
 	}
 
 	return nil
@@ -127,8 +257,10 @@ func main() {
 	cfg := &Config{}
 
 	// Parse command line flags
-	flag.StringVar(&cfg.Transport, "transport", "stdio", "Transport type (stdio or sse)")
-	flag.StringVar(&cfg.SSEAddr, "sse-address", "0.0.0.0:8000", "Address for SSE server to listen on")
+	flag.StringVar(&cfg.Transport, "transport", "streamable-http", "Transport type (stdio, sse or streamable-http)")
+	flag.StringVar(&cfg.Address, "address", "0.0.0.0:8000", "Address for HTTP server to listen on")
+	flag.StringVar(&cfg.Address, "sse-address", "0.0.0.0:8000", "Deprecated: use --address instead")
+	flag.StringVar(&cfg.EndpointPath, "endpoint-path", "/mcp", "Endpoint path for streamable-http server")
 	flag.StringVar(&cfg.LogLevel, "log-level", "info", "Log level (debug, info, warn, error)")
 	flag.BoolVar(&cfg.JSONLogs, "json-logs", false, "Output logs in JSON format")
 	flag.BoolVar(&cfg.NoAuthentication, "no-authentication", false, "Allow anonymous connections without credentials")

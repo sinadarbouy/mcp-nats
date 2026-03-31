@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.24-bullseye AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-bookworm AS builder
 
 # Set the working directory
 WORKDIR /app
@@ -13,14 +13,20 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the application
-RUN go build -o mcp-nats ./cmd/mcp-nats
+# Set build arguments for cross-compilation
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
+# Build the application with proper cross-compilation
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -a -installsuffix cgo -o mcp-nats ./cmd/mcp-nats
 
 # Install NATS CLI
 RUN go install github.com/nats-io/natscli/nats@latest
 
 # Final stage
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Create a non-root user
 RUN useradd -r -u 1000 -m mcp-nats

@@ -1,0 +1,19 @@
+fullnameOverride: nats
+
+config:
+  cluster:
+    enabled: false
+  jetstream:
+    enabled: false
+  merge:
+    authorization:
+      user: mcpuser
+      password: mcppassword
+
+service:
+  enabled: true
+  ports:
+    nats:
+      enabled: true
+    monitor:
+      enabled: true
