@@ -48,7 +48,7 @@ func TestCheckNATSConnectivityReachable(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to listen: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	go func() {
 		conn, acceptErr := listener.Accept()
