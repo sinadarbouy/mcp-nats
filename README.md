@@ -83,6 +83,33 @@ cd mcp-nats
 go build -o mcp-nats ./cmd/mcp-nats
 ```
 
+### Helm Chart (Kubernetes)
+The Helm chart is available at `deploy/charts/mcp-nats`.
+
+Install with defaults:
+```sh
+helm install mcp-nats ./deploy/charts/mcp-nats
+```
+
+Anonymous authentication example:
+```sh
+helm install mcp-nats ./deploy/charts/mcp-nats \
+  --set nats.url=nats://nats.default.svc:4222 \
+  --set nats.noAuthentication=true
+```
+
+User/password authentication example with existing secret:
+```sh
+kubectl create secret generic mcp-nats-auth \
+  --from-literal=NATS_USER=myuser \
+  --from-literal=NATS_PASSWORD=mypass
+
+helm install mcp-nats ./deploy/charts/mcp-nats \
+  --set nats.url=nats://nats.default.svc:4222 \
+  --set nats.noAuthentication=false \
+  --set auth.existingSecret.name=mcp-nats-auth
+```
+
 ## Configuration
 
 ### Environment Variables
