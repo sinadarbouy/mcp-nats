@@ -77,7 +77,7 @@ func (s *AccountTestSuite) TestAccountInfoHandler() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_info",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS", // Using SYS account which should exist by default
 			},
 		},
@@ -108,7 +108,7 @@ func (s *AccountTestSuite) TestAccountReportConnectionsHandler() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_report_connections",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 			},
 		},
@@ -139,7 +139,7 @@ func (s *AccountTestSuite) TestAccountReportConnectionsHandlerWithOptions() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_report_connections",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"sort":         "subs",
 				"top":          float64(10),
@@ -172,7 +172,7 @@ func (s *AccountTestSuite) TestAccountReportStatisticsHandler() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_report_statistics",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 			},
 		},
@@ -208,7 +208,7 @@ func (s *AccountTestSuite) TestAccountBackupHandler() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_backup",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"target":       tempDir,
 				"force":        true, // Use force to avoid prompts in tests
@@ -252,7 +252,7 @@ func (s *AccountTestSuite) TestAccountBackupHandlerWithOptions() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_backup",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"target":       tempDir,
 				"check":        true,
@@ -303,7 +303,7 @@ func (s *AccountTestSuite) TestAccountRestoreHandler() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_restore",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"directory":    backupDir,
 			},
@@ -352,11 +352,11 @@ func (s *AccountTestSuite) TestAccountRestoreHandlerWithOptions() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_restore",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"directory":    backupDir,
 				"cluster":      "test-cluster",
-				"tags":         []interface{}{"tag1", "tag2"},
+				"tags":         []any{"tag1", "tag2"},
 			},
 		},
 	}
@@ -391,7 +391,7 @@ func (s *AccountTestSuite) TestAccountTLSHandler() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_tls",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 			},
 		},
@@ -427,7 +427,7 @@ func (s *AccountTestSuite) TestAccountTLSHandlerWithOptions() {
 	request := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "account_tls",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"expire_warn":  "1w",
 				"ocsp":         true,

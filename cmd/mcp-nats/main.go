@@ -37,6 +37,7 @@ type Config struct {
 	NoAuthentication bool
 	NATSUser         string
 	NATSPassword     string
+	ReadOnly         bool
 }
 
 // validateConfig ensures all config values are valid
@@ -170,7 +171,7 @@ func runHTTPServer(ctx context.Context, srv httpServer, addr, transportName stri
 	}
 }
 
-func newServer() (*server.MCPServer, error) {
+func newServer(readOnly bool) (*server.MCPServer, error) {
 	s := server.NewMCPServer(
 		AppName,
 		Version,
@@ -186,7 +187,7 @@ func newServer() (*server.MCPServer, error) {
 	}
 
 	// Register all NATS server tools
-	tools.RegisterTools(s, natsTools)
+	tools.RegisterTools(s, natsTools, readOnly)
 
 	return s, nil
 }
@@ -209,9 +210,13 @@ func run(ctx context.Context, cfg *Config) error {
 		}
 	}
 
-	s, err := newServer()
+	s, err := newServer(cfg.ReadOnly)
 	if err != nil {
 		return fmt.Errorf("failed to create server: %w", err)
+	}
+
+	if cfg.ReadOnly {
+		logger.Info("Read-only mode enabled; mutating tools omitted")
 	}
 
 	switch cfg.Transport {
@@ -253,6 +258,11 @@ func run(ctx context.Context, cfg *Config) error {
 	return nil
 }
 
+func envReadOnly() bool {
+	v := strings.TrimSpace(strings.ToLower(os.Getenv("MCP_NATS_READ_ONLY")))
+	return v == "1" || v == "true" || v == "yes"
+}
+
 func main() {
 	cfg := &Config{}
 
@@ -266,6 +276,7 @@ func main() {
 	flag.BoolVar(&cfg.NoAuthentication, "no-authentication", false, "Allow anonymous connections without credentials")
 	flag.StringVar(&cfg.NATSUser, "user", "", "NATS username or token (can also be set via NATS_USER env var)")
 	flag.StringVar(&cfg.NATSPassword, "password", "", "NATS password (can also be set via NATS_PASSWORD env var)")
+	flag.BoolVar(&cfg.ReadOnly, "read-only", envReadOnly(), "Omit mutating MCP tools; default from MCP_NATS_READ_ONLY (true/1/yes)")
 	flag.Parse()
 
 	// Validate configuration
