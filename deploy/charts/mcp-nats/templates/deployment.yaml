@@ -83,15 +83,21 @@ spec:
           command:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if or .Values.args .Values.extraArgs }}
           args:
+            - --transport
+            - {{ .Values.server.transport | quote }}
+            - --address
+            - {{ .Values.server.address | quote }}
+            {{- if eq .Values.server.transport "streamable-http" }}
+            - --endpoint-path
+            - {{ .Values.server.endpointPath | quote }}
+            {{- end }}
             {{- with .Values.args }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
             {{- with .Values.extraArgs }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-          {{- end }}
           {{- with .Values.readinessProbe }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}

@@ -135,7 +135,7 @@ func (s *ServerTools) GetTools() []Tool {
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		accountName, err := common.DetermineAccountName(request.GetArguments())
 		if err != nil {
 			return nil, err
 		}
@@ -148,7 +148,7 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 		var args []string
 		args = append(args, "server", "list")
 
-		if expect, ok := request.Params.Arguments["expect"].(int); ok {
+		if expect, ok := request.GetArguments()["expect"].(int); ok {
 			args = append(args, strconv.Itoa(expect))
 		}
 
@@ -167,7 +167,7 @@ func (s *ServerTools) serverListHandler() server.ToolHandlerFunc {
 //	[<server>]  Server ID or Name to inspect
 func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		accountName, err := common.DetermineAccountName(request.GetArguments())
 		if err != nil {
 			return nil, err
 		}
@@ -180,7 +180,7 @@ func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 		var args []string
 		args = append(args, "server", "info")
 
-		if server, ok := request.Params.Arguments["server"].(string); ok {
+		if server, ok := request.GetArguments()["server"].(string); ok {
 			args = append(args, server)
 		}
 		output, err := executor.ExecuteCommand(args...)
@@ -198,7 +198,7 @@ func (s *ServerTools) serverInfoHandler() server.ToolHandlerFunc {
 //	[<expect>]  How many servers to expect
 func (s *ServerTools) serverPingHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		accountName, err := common.DetermineAccountName(request.GetArguments())
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +211,7 @@ func (s *ServerTools) serverPingHandler() server.ToolHandlerFunc {
 		var args []string
 		args = append(args, "server", "ping")
 
-		if expect, ok := request.Params.Arguments["expect"].(string); ok {
+		if expect, ok := request.GetArguments()["expect"].(string); ok {
 			args = append(args, expect)
 		}
 		output, err := executor.ExecuteCommand(args...)

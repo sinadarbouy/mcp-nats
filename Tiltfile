@@ -34,27 +34,26 @@ local_resource(
     allow_parallel=False,
 )
 
-local_resource(
-    "build-mcp-nats-image",
-    cmd="docker build -f deploy/tilt/Dockerfile.tilt -t mcp-nats:tilt .",
-    resource_deps=["nats"],
-    allow_parallel=False,
+# Managed image build + cluster wiring: Tilt rewrites the Deployment image to a
+# unique tag so nodes never keep serving an old blob when reuse_tag mcp-nats:tilt
+# is rebuilt locally (fixes "flag provided but not defined: -address" from stale binaries).
+docker_build(
+    "mcp-nats:tilt",
+    ".",
+    dockerfile="deploy/tilt/Dockerfile.tilt",
 )
 
-local_resource(
+k8s_yaml(helm(
+    "./deploy/charts/mcp-nats",
+    name=MCP_RELEASE,
+    namespace=NAMESPACE,
+    values=["deploy/tilt/mcp-nats-values.yaml"],
+))
+
+k8s_resource(
     "mcp-nats",
-    cmd=(
-        HELM_ENV
-        + " helm upgrade --install "
-        + MCP_RELEASE
-        + " ./deploy/charts/mcp-nats "
-        + "--namespace "
-        + NAMESPACE
-        + " --create-namespace "
-        + "-f deploy/tilt/mcp-nats-values.yaml"
-    ),
-    resource_deps=["build-mcp-nats-image"],
-    allow_parallel=False,
+    resource_deps=["nats"],
+    labels=["mcp"],
 )
 
 local_resource(
@@ -66,9 +65,7 @@ local_resource(
         + "echo && "
         + "echo 'Use: kubectl port-forward -n "
         + NAMESPACE
-        + " svc/"
-        + MCP_RELEASE
-        + "-mcp-nats 8000:8000'"
+        + " svc/mcp-nats 8000:8000'"
     ),
     resource_deps=["mcp-nats"],
     trigger_mode=TRIGGER_MODE_MANUAL,

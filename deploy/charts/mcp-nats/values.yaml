@@ -21,6 +21,11 @@ imagePullSecrets: []
 
 containerPort: 8000
 
+server:
+  transport: streamable-http
+  address: 0.0.0.0:8000
+  endpointPath: /mcp
+
 nats:
   url: nats://localhost:4222
   noAuthentication: true

@@ -55,7 +55,7 @@ func (r *RTTTools) GetTools() []Tool {
 
 func (r *RTTTools) rttHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -68,12 +68,12 @@ func (r *RTTTools) rttHandler() server.ToolHandlerFunc {
 		args := []string{"rtt"}
 
 		// Add json flag if specified
-		if json, ok := request.Params.Arguments["json"].(bool); ok && json {
+		if json, ok := request.GetArguments()["json"].(bool); ok && json {
 			args = append(args, "--json")
 		}
 
 		// Add iterations if specified
-		if iterations, ok := request.Params.Arguments["iterations"].(int); ok {
+		if iterations, ok := request.GetArguments()["iterations"].(int); ok {
 			args = append(args, strconv.Itoa(iterations))
 		}
 

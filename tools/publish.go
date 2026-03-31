@@ -120,12 +120,12 @@ func generateRandomString(min, max int) string {
 
 func (p *PublishTools) publishHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, err := common.DetermineAccountName(request.Params.Arguments)
+		accountName, err := common.DetermineAccountName(request.GetArguments())
 		if err != nil {
 			return nil, err
 		}
 
-		subject, ok := request.Params.Arguments["subject"].(string)
+		subject, ok := request.GetArguments()["subject"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing subject")
 		}
@@ -136,17 +136,17 @@ func (p *PublishTools) publishHandler() server.ToolHandlerFunc {
 		}
 
 		body := ""
-		if b, ok := request.Params.Arguments["body"].(string); ok {
+		if b, ok := request.GetArguments()["body"].(string); ok {
 			body = b
 		}
 
 		count := 1
-		if c, ok := request.Params.Arguments["count"].(float64); ok {
+		if c, ok := request.GetArguments()["count"].(float64); ok {
 			count = int(c)
 		}
 
 		var sleep time.Duration
-		if s, ok := request.Params.Arguments["sleep"].(string); ok {
+		if s, ok := request.GetArguments()["sleep"].(string); ok {
 			sleep, err = time.ParseDuration(s)
 			if err != nil {
 				return nil, fmt.Errorf("invalid sleep duration: %w", err)
@@ -186,12 +186,12 @@ func (p *PublishTools) publishHandler() server.ToolHandlerFunc {
 			args := []string{"pub"}
 
 			// Add reply if specified
-			if r, ok := request.Params.Arguments["reply"].(string); ok && r != "" {
+			if r, ok := request.GetArguments()["reply"].(string); ok && r != "" {
 				args = append(args, "--reply", r)
 			}
 
 			// Add headers if specified
-			if h, ok := request.Params.Arguments["header"].([]interface{}); ok {
+			if h, ok := request.GetArguments()["header"].([]interface{}); ok {
 				for _, header := range h {
 					args = append(args, "--header", header.(string))
 				}

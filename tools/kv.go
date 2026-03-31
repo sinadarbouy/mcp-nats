@@ -503,12 +503,12 @@ func (k *KVTools) GetTools() []Tool {
 // Handler implementations
 func (k *KVTools) kvAddHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -521,60 +521,60 @@ func (k *KVTools) kvAddHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "add", bucket}
 
 		// Add optional flags
-		if history, ok := request.Params.Arguments["history"].(float64); ok {
+		if history, ok := request.GetArguments()["history"].(float64); ok {
 			args = append(args, fmt.Sprintf("--history=%d", int(history)))
 		}
-		if ttl, ok := request.Params.Arguments["ttl"].(string); ok {
+		if ttl, ok := request.GetArguments()["ttl"].(string); ok {
 			args = append(args, fmt.Sprintf("--ttl=%s", ttl))
 		}
-		if replicas, ok := request.Params.Arguments["replicas"].(float64); ok {
+		if replicas, ok := request.GetArguments()["replicas"].(float64); ok {
 			args = append(args, fmt.Sprintf("--replicas=%d", int(replicas)))
 		}
-		if maxValueSize, ok := request.Params.Arguments["max_value_size"].(float64); ok {
+		if maxValueSize, ok := request.GetArguments()["max_value_size"].(float64); ok {
 			args = append(args, fmt.Sprintf("--max-value-size=%d", int(maxValueSize)))
 		}
-		if maxBucketSize, ok := request.Params.Arguments["max_bucket_size"].(float64); ok {
+		if maxBucketSize, ok := request.GetArguments()["max_bucket_size"].(float64); ok {
 			args = append(args, fmt.Sprintf("--max-bucket-size=%d", int(maxBucketSize)))
 		}
-		if description, ok := request.Params.Arguments["description"].(string); ok {
+		if description, ok := request.GetArguments()["description"].(string); ok {
 			args = append(args, fmt.Sprintf("--description=%s", description))
 		}
-		if storage, ok := request.Params.Arguments["storage"].(string); ok {
+		if storage, ok := request.GetArguments()["storage"].(string); ok {
 			args = append(args, fmt.Sprintf("--storage=%s", storage))
 		}
-		if compress, ok := request.Params.Arguments["compress"].(bool); ok {
+		if compress, ok := request.GetArguments()["compress"].(bool); ok {
 			if compress {
 				args = append(args, "--compress")
 			} else {
 				args = append(args, "--no-compress")
 			}
 		}
-		if tags, ok := request.Params.Arguments["tags"].([]interface{}); ok {
+		if tags, ok := request.GetArguments()["tags"].([]interface{}); ok {
 			for _, tag := range tags {
 				if strTag, ok := tag.(string); ok {
 					args = append(args, fmt.Sprintf("--tags=%s", strTag))
 				}
 			}
 		}
-		if cluster, ok := request.Params.Arguments["cluster"].(string); ok {
+		if cluster, ok := request.GetArguments()["cluster"].(string); ok {
 			args = append(args, fmt.Sprintf("--cluster=%s", cluster))
 		}
-		if republishSource, ok := request.Params.Arguments["republish_source"].(string); ok {
+		if republishSource, ok := request.GetArguments()["republish_source"].(string); ok {
 			args = append(args, fmt.Sprintf("--republish-source=%s", republishSource))
 		}
-		if republishDest, ok := request.Params.Arguments["republish_destination"].(string); ok {
+		if republishDest, ok := request.GetArguments()["republish_destination"].(string); ok {
 			args = append(args, fmt.Sprintf("--republish-destination=%s", republishDest))
 		}
-		if republishHeaders, ok := request.Params.Arguments["republish_headers"].(bool); ok && republishHeaders {
+		if republishHeaders, ok := request.GetArguments()["republish_headers"].(bool); ok && republishHeaders {
 			args = append(args, "--republish-headers")
 		}
-		if mirror, ok := request.Params.Arguments["mirror"].(string); ok {
+		if mirror, ok := request.GetArguments()["mirror"].(string); ok {
 			args = append(args, fmt.Sprintf("--mirror=%s", mirror))
 		}
-		if mirrorDomain, ok := request.Params.Arguments["mirror_domain"].(string); ok {
+		if mirrorDomain, ok := request.GetArguments()["mirror_domain"].(string); ok {
 			args = append(args, fmt.Sprintf("--mirror-domain=%s", mirrorDomain))
 		}
-		if sources, ok := request.Params.Arguments["source"].([]interface{}); ok {
+		if sources, ok := request.GetArguments()["source"].([]interface{}); ok {
 			for _, source := range sources {
 				if strSource, ok := source.(string); ok {
 					args = append(args, fmt.Sprintf("--source=%s", strSource))
@@ -583,7 +583,7 @@ func (k *KVTools) kvAddHandler() server.ToolHandlerFunc {
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -597,17 +597,17 @@ func (k *KVTools) kvAddHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvPutHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		key, ok := request.Params.Arguments["key"].(string)
+		key, ok := request.GetArguments()["key"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing key")
 		}
@@ -620,15 +620,15 @@ func (k *KVTools) kvPutHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "put", bucket, key}
 
 		// If value is provided, add it to args
-		if value, ok := request.Params.Arguments["value"].(string); ok {
+		if value, ok := request.GetArguments()["value"].(string); ok {
 			args = append(args, value)
-		} else if stdin, ok := request.Params.Arguments["stdin"].(string); ok {
+		} else if stdin, ok := request.GetArguments()["stdin"].(string); ok {
 			// If no value but stdin is provided, use it as input
 			executor.SetStdin(stdin)
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -642,17 +642,17 @@ func (k *KVTools) kvPutHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvGetHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		key, ok := request.Params.Arguments["key"].(string)
+		key, ok := request.GetArguments()["key"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing key")
 		}
@@ -665,17 +665,17 @@ func (k *KVTools) kvGetHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "get", bucket, key}
 
 		// Add revision flag if provided
-		if revision, ok := request.Params.Arguments["revision"].(string); ok {
+		if revision, ok := request.GetArguments()["revision"].(string); ok {
 			args = append(args, fmt.Sprintf("--revision=%s", revision))
 		}
 
 		// Add raw flag if true
-		if raw, ok := request.Params.Arguments["raw"].(bool); ok && raw {
+		if raw, ok := request.GetArguments()["raw"].(bool); ok && raw {
 			args = append(args, "--raw")
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -689,17 +689,17 @@ func (k *KVTools) kvGetHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvCreateHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		key, ok := request.Params.Arguments["key"].(string)
+		key, ok := request.GetArguments()["key"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing key")
 		}
@@ -712,15 +712,15 @@ func (k *KVTools) kvCreateHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "create", bucket, key}
 
 		// If value is provided, add it to args
-		if value, ok := request.Params.Arguments["value"].(string); ok {
+		if value, ok := request.GetArguments()["value"].(string); ok {
 			args = append(args, value)
-		} else if stdin, ok := request.Params.Arguments["stdin"].(string); ok {
+		} else if stdin, ok := request.GetArguments()["stdin"].(string); ok {
 			// If no value but stdin is provided, use it as input
 			executor.SetStdin(stdin)
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -734,17 +734,17 @@ func (k *KVTools) kvCreateHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvUpdateHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		key, ok := request.Params.Arguments["key"].(string)
+		key, ok := request.GetArguments()["key"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing key")
 		}
@@ -757,20 +757,20 @@ func (k *KVTools) kvUpdateHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "update", bucket, key}
 
 		// If value is provided, add it to args
-		if value, ok := request.Params.Arguments["value"].(string); ok {
+		if value, ok := request.GetArguments()["value"].(string); ok {
 			args = append(args, value)
-		} else if stdin, ok := request.Params.Arguments["stdin"].(string); ok {
+		} else if stdin, ok := request.GetArguments()["stdin"].(string); ok {
 			// If no value but stdin is provided, use it as input
 			executor.SetStdin(stdin)
 		}
 
 		// Add revision if provided
-		if revision, ok := request.Params.Arguments["revision"].(string); ok {
+		if revision, ok := request.GetArguments()["revision"].(string); ok {
 			args = append(args, revision)
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -784,12 +784,12 @@ func (k *KVTools) kvUpdateHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvDelHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -802,17 +802,17 @@ func (k *KVTools) kvDelHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "del", bucket}
 
 		// Add key if provided
-		if key, ok := request.Params.Arguments["key"].(string); ok {
+		if key, ok := request.GetArguments()["key"].(string); ok {
 			args = append(args, key)
 		}
 
 		// Add force flag if true
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "--force")
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -826,17 +826,17 @@ func (k *KVTools) kvDelHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvPurgeHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		key, ok := request.Params.Arguments["key"].(string)
+		key, ok := request.GetArguments()["key"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing key")
 		}
@@ -849,12 +849,12 @@ func (k *KVTools) kvPurgeHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "purge", bucket, key}
 
 		// Add force flag if true
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "--force")
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -868,17 +868,17 @@ func (k *KVTools) kvPurgeHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvHistoryHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		key, ok := request.Params.Arguments["key"].(string)
+		key, ok := request.GetArguments()["key"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing key")
 		}
@@ -889,7 +889,7 @@ func (k *KVTools) kvHistoryHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"kv", "history", bucket, key}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -903,7 +903,7 @@ func (k *KVTools) kvHistoryHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvLsHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -916,27 +916,27 @@ func (k *KVTools) kvLsHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "ls"}
 
 		// Add bucket if provided
-		if bucket, ok := request.Params.Arguments["bucket"].(string); ok {
+		if bucket, ok := request.GetArguments()["bucket"].(string); ok {
 			args = append(args, bucket)
 		}
 
 		// Add names flag if true
-		if names, ok := request.Params.Arguments["names"].(bool); ok && names {
+		if names, ok := request.GetArguments()["names"].(bool); ok && names {
 			args = append(args, "--names")
 		}
 
 		// Add verbose flag if true
-		if verbose, ok := request.Params.Arguments["verbose"].(bool); ok && verbose {
+		if verbose, ok := request.GetArguments()["verbose"].(bool); ok && verbose {
 			args = append(args, "--verbose")
 		}
 
 		// Add display-value flag if true
-		if displayValue, ok := request.Params.Arguments["display_value"].(bool); ok && displayValue {
+		if displayValue, ok := request.GetArguments()["display_value"].(bool); ok && displayValue {
 			args = append(args, "--display-value")
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -950,12 +950,12 @@ func (k *KVTools) kvLsHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvWatchHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -966,10 +966,10 @@ func (k *KVTools) kvWatchHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"kv", "watch", bucket}
-		if key, ok := request.Params.Arguments["key"].(string); ok {
+		if key, ok := request.GetArguments()["key"].(string); ok {
 			args = append(args, key)
 		}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -983,7 +983,7 @@ func (k *KVTools) kvWatchHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -996,12 +996,12 @@ func (k *KVTools) kvInfoHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "info"}
 
 		// Add bucket if provided
-		if bucket, ok := request.Params.Arguments["bucket"].(string); ok {
+		if bucket, ok := request.GetArguments()["bucket"].(string); ok {
 			args = append(args, bucket)
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -1015,12 +1015,12 @@ func (k *KVTools) kvInfoHandler() server.ToolHandlerFunc {
 
 func (k *KVTools) kvCompactHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -1033,12 +1033,12 @@ func (k *KVTools) kvCompactHandler() server.ToolHandlerFunc {
 		args := []string{"kv", "compact", bucket}
 
 		// Add force flag if true
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "--force")
 		}
 
 		// Add any additional flags passed
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 

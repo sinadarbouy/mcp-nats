@@ -346,7 +346,7 @@ func getObjectFlags(args map[string]interface{}) []string {
 
 func (o *ObjectTools) objectAddHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -356,7 +356,7 @@ func (o *ObjectTools) objectAddHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -364,32 +364,32 @@ func (o *ObjectTools) objectAddHandler() server.ToolHandlerFunc {
 		args := []string{"object", "add", bucket}
 
 		// Add optional parameters
-		if description, ok := request.Params.Arguments["description"].(string); ok {
+		if description, ok := request.GetArguments()["description"].(string); ok {
 			args = append(args, fmt.Sprintf("--description=%s", description))
 		}
-		if ttl, ok := request.Params.Arguments["ttl"].(string); ok {
+		if ttl, ok := request.GetArguments()["ttl"].(string); ok {
 			args = append(args, fmt.Sprintf("--ttl=%s", ttl))
 		}
-		if storage, ok := request.Params.Arguments["storage"].(string); ok {
+		if storage, ok := request.GetArguments()["storage"].(string); ok {
 			args = append(args, fmt.Sprintf("--storage=%s", storage))
 		}
-		if replicas, ok := request.Params.Arguments["replicas"].(float64); ok {
+		if replicas, ok := request.GetArguments()["replicas"].(float64); ok {
 			args = append(args, fmt.Sprintf("--replicas=%d", int(replicas)))
 		}
-		if maxBucketSize, ok := request.Params.Arguments["max_bucket_size"].(string); ok {
+		if maxBucketSize, ok := request.GetArguments()["max_bucket_size"].(string); ok {
 			args = append(args, fmt.Sprintf("--max-bucket-size=%s", maxBucketSize))
 		}
-		if tags, ok := request.Params.Arguments["tags"].([]interface{}); ok {
+		if tags, ok := request.GetArguments()["tags"].([]interface{}); ok {
 			for _, tag := range tags {
 				if strTag, ok := tag.(string); ok {
 					args = append(args, fmt.Sprintf("--tags=%s", strTag))
 				}
 			}
 		}
-		if cluster, ok := request.Params.Arguments["cluster"].(string); ok {
+		if cluster, ok := request.GetArguments()["cluster"].(string); ok {
 			args = append(args, fmt.Sprintf("--cluster=%s", cluster))
 		}
-		if metadata, ok := request.Params.Arguments["metadata"].([]interface{}); ok {
+		if metadata, ok := request.GetArguments()["metadata"].([]interface{}); ok {
 			for _, meta := range metadata {
 				if strMeta, ok := meta.(string); ok {
 					args = append(args, fmt.Sprintf("--metadata=%s", strMeta))
@@ -398,7 +398,7 @@ func (o *ObjectTools) objectAddHandler() server.ToolHandlerFunc {
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -417,7 +417,7 @@ func (o *ObjectTools) objectAddHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectPutHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -427,12 +427,12 @@ func (o *ObjectTools) objectPutHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		file, ok := request.Params.Arguments["file"].(string)
+		file, ok := request.GetArguments()["file"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing file")
 		}
@@ -440,33 +440,33 @@ func (o *ObjectTools) objectPutHandler() server.ToolHandlerFunc {
 		args := []string{"object", "put", bucket, file}
 
 		// If data is provided, use it as stdin
-		if data, ok := request.Params.Arguments["data"].(string); ok {
+		if data, ok := request.GetArguments()["data"].(string); ok {
 			executor.SetStdin(data)
 		}
 
 		// Add optional parameters
-		if name, ok := request.Params.Arguments["name"].(string); ok {
+		if name, ok := request.GetArguments()["name"].(string); ok {
 			args = append(args, fmt.Sprintf("--name=%s", name))
 		}
-		if description, ok := request.Params.Arguments["description"].(string); ok {
+		if description, ok := request.GetArguments()["description"].(string); ok {
 			args = append(args, fmt.Sprintf("--description=%s", description))
 		}
-		if headers, ok := request.Params.Arguments["header"].([]interface{}); ok {
+		if headers, ok := request.GetArguments()["header"].([]interface{}); ok {
 			for _, header := range headers {
 				if strHeader, ok := header.(string); ok {
 					args = append(args, "-H", strHeader)
 				}
 			}
 		}
-		if progress, ok := request.Params.Arguments["progress"].(bool); ok && !progress {
+		if progress, ok := request.GetArguments()["progress"].(bool); ok && !progress {
 			args = append(args, "--no-progress")
 		}
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "-f")
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -486,7 +486,7 @@ func (o *ObjectTools) objectPutHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectGetHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -496,12 +496,12 @@ func (o *ObjectTools) objectGetHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
 
-		file, ok := request.Params.Arguments["file"].(string)
+		file, ok := request.GetArguments()["file"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing file")
 		}
@@ -509,18 +509,18 @@ func (o *ObjectTools) objectGetHandler() server.ToolHandlerFunc {
 		args := []string{"object", "get", bucket, file}
 
 		// Add optional parameters
-		if output, ok := request.Params.Arguments["output"].(string); ok {
+		if output, ok := request.GetArguments()["output"].(string); ok {
 			args = append(args, "-O", output)
 		}
-		if progress, ok := request.Params.Arguments["progress"].(bool); ok && !progress {
+		if progress, ok := request.GetArguments()["progress"].(bool); ok && !progress {
 			args = append(args, "--no-progress")
 		}
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "-f")
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -540,7 +540,7 @@ func (o *ObjectTools) objectGetHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectDelHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -550,7 +550,7 @@ func (o *ObjectTools) objectDelHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -558,17 +558,17 @@ func (o *ObjectTools) objectDelHandler() server.ToolHandlerFunc {
 		args := []string{"object", "del", bucket}
 
 		// Add file if provided
-		if file, ok := request.Params.Arguments["file"].(string); ok {
+		if file, ok := request.GetArguments()["file"].(string); ok {
 			args = append(args, file)
 		}
 
 		// Add force flag if true
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "-f")
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -587,7 +587,7 @@ func (o *ObjectTools) objectDelHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -601,18 +601,18 @@ func (o *ObjectTools) objectInfoHandler() server.ToolHandlerFunc {
 
 		// Add bucket if provided
 		var bucket string
-		if b, ok := request.Params.Arguments["bucket"].(string); ok {
+		if b, ok := request.GetArguments()["bucket"].(string); ok {
 			bucket = b
 			args = append(args, bucket)
 
 			// Add file if provided and bucket is specified
-			if file, ok := request.Params.Arguments["file"].(string); ok {
+			if file, ok := request.GetArguments()["file"].(string); ok {
 				args = append(args, file)
 			}
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -631,7 +631,7 @@ func (o *ObjectTools) objectInfoHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectLsHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -645,18 +645,18 @@ func (o *ObjectTools) objectLsHandler() server.ToolHandlerFunc {
 
 		// Add bucket if provided
 		var bucket string
-		if b, ok := request.Params.Arguments["bucket"].(string); ok {
+		if b, ok := request.GetArguments()["bucket"].(string); ok {
 			bucket = b
 			args = append(args, bucket)
 		}
 
 		// Add names flag if true
-		if names, ok := request.Params.Arguments["names"].(bool); ok && names {
+		if names, ok := request.GetArguments()["names"].(bool); ok && names {
 			args = append(args, "-n")
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -675,7 +675,7 @@ func (o *ObjectTools) objectLsHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectSealHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -685,7 +685,7 @@ func (o *ObjectTools) objectSealHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}
@@ -693,12 +693,12 @@ func (o *ObjectTools) objectSealHandler() server.ToolHandlerFunc {
 		args := []string{"object", "seal", bucket}
 
 		// Add force flag if true
-		if force, ok := request.Params.Arguments["force"].(bool); ok && force {
+		if force, ok := request.GetArguments()["force"].(bool); ok && force {
 			args = append(args, "-f")
 		}
 
 		// Add any additional flags
-		if flags := getObjectFlags(request.Params.Arguments); flags != nil {
+		if flags := getObjectFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -717,7 +717,7 @@ func (o *ObjectTools) objectSealHandler() server.ToolHandlerFunc {
 
 func (o *ObjectTools) objectWatchHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -727,7 +727,7 @@ func (o *ObjectTools) objectWatchHandler() server.ToolHandlerFunc {
 			return nil, err
 		}
 
-		bucket, ok := request.Params.Arguments["bucket"].(string)
+		bucket, ok := request.GetArguments()["bucket"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing bucket")
 		}

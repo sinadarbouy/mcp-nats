@@ -91,6 +91,14 @@ Install with defaults:
 helm install mcp-nats ./deploy/charts/mcp-nats
 ```
 
+Streamable HTTP mode with explicit server values:
+```sh
+helm install mcp-nats ./deploy/charts/mcp-nats \
+  --set server.transport=streamable-http \
+  --set server.address=0.0.0.0:8000 \
+  --set server.endpointPath=/mcp
+```
+
 Anonymous authentication example:
 ```sh
 helm install mcp-nats ./deploy/charts/mcp-nats \
@@ -161,8 +169,10 @@ Auth smoke test:
 - `NATS_PASSWORD`: Password for user/password authentication
 
 ### Command Line Flags
-- `--transport`: Transport type (stdio or sse), default: stdio
-- `--sse-address`: Address for SSE server to listen on, default: 0.0.0.0:8000
+- `--transport`: Transport type (stdio, sse, or streamable-http), default: streamable-http
+- `--address`: Address for HTTP transport to listen on, default: 0.0.0.0:8000
+- `--endpoint-path`: Endpoint path for streamable-http transport, default: /mcp
+- `--sse-address`: Deprecated alias of `--address`
 - `--log-level`: Log level (debug, info, warn, error), default: info
 - `--json-logs`: Output logs in JSON format, default: false
 - `--no-authentication`: Allow anonymous connections without credentials
@@ -185,14 +195,17 @@ The MCP NATS server supports three authentication methods:
 
 ### Example Usage
 ```sh
-# Run with SSE transport and debug logging
-./mcp-nats --transport sse --log-level debug
+# Run with Streamable HTTP transport (default) and debug logging
+./mcp-nats --log-level debug
+
+# Run with custom Streamable HTTP endpoint path
+./mcp-nats --transport streamable-http --address localhost:9000 --endpoint-path /mcp
 
 # Run with JSON logging
 ./mcp-nats --json-logs
 
-# Run with custom SSE address
-./mcp-nats --transport sse --sse-address localhost:9000
+# Run with SSE transport
+./mcp-nats --transport sse --address localhost:9000
 
 # Run with anonymous authentication
 ./mcp-nats --no-authentication
@@ -211,8 +224,8 @@ Make sure your .vscode/settings.json includes:
 "mcp": {
   "servers": {
     "nats": {
-      "type": "sse",
-      "url": "http://localhost:8000/sse"
+      "type": "streamable-http",
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -228,7 +241,7 @@ cursor
         "NATS_SYS_CREDS": "<base64 of SYS account creds>"
         "NATS_A_CREDS": "<base64 of A account creds>"
       },
-      "url": "http://localhost:8000/sse"
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -243,7 +256,7 @@ cursor
         "NATS_URL": "nats://localhost:42222",
         "NATS_NO_AUTHENTICATION": "true"
       },
-      "url": "http://localhost:8000/sse"
+      "url": "http://localhost:8000/mcp"
     }
   }
 }
@@ -259,7 +272,7 @@ cursor
         "NATS_USER": "myuser",
         "NATS_PASSWORD": "mypass"
       },
-      "url": "http://localhost:8000/sse"
+      "url": "http://localhost:8000/mcp"
     }
   }
 }

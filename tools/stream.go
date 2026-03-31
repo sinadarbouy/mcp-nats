@@ -247,12 +247,12 @@ func getFlags(args map[string]interface{}) []string {
 
 func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		stream, ok := request.Params.Arguments["stream"].(string)
+		stream, ok := request.GetArguments()["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
@@ -263,7 +263,7 @@ func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "info", stream}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -277,7 +277,7 @@ func (s *StreamTools) streamInfoHandler() server.ToolHandlerFunc {
 
 func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -288,7 +288,7 @@ func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "list"}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -303,7 +303,7 @@ func (s *StreamTools) streamListHandler() server.ToolHandlerFunc {
 // nats stream report
 func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -314,7 +314,7 @@ func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "report"}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -329,7 +329,7 @@ func (s *StreamTools) streamReportHandler() server.ToolHandlerFunc {
 // nats stream find
 func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
@@ -340,7 +340,7 @@ func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "find"}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -358,12 +358,12 @@ func (s *StreamTools) streamFindHandler() server.ToolHandlerFunc {
 //	[<stream>]  Stream to retrieve state information for
 func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		stream, ok := request.Params.Arguments["stream"].(string)
+		stream, ok := request.GetArguments()["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
@@ -374,7 +374,7 @@ func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "state", stream}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -392,12 +392,12 @@ func (s *StreamTools) streamStateHandler() server.ToolHandlerFunc {
 //	[<stream>]  Stream name
 func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		stream, ok := request.Params.Arguments["stream"].(string)
+		stream, ok := request.GetArguments()["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
@@ -408,7 +408,7 @@ func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "subjects", stream}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -427,17 +427,17 @@ func (s *StreamTools) streamSubjectsHandler() server.ToolHandlerFunc {
 //	 [<size>]    Page size
 func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		stream, ok := request.Params.Arguments["stream"].(string)
+		stream, ok := request.GetArguments()["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
 
-		size, ok := request.Params.Arguments["size"].(int)
+		size, ok := request.GetArguments()["size"].(int)
 		if !ok {
 			return nil, fmt.Errorf("missing size")
 		}
@@ -448,7 +448,7 @@ func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "view", stream, strconv.Itoa(size)}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
@@ -467,17 +467,17 @@ func (s *StreamTools) streamViewHandler() server.ToolHandlerFunc {
 //	[<id>]      Message Sequence to retrieve
 func (s *StreamTools) streamGetHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		accountName, ok := request.Params.Arguments["account_name"].(string)
+		accountName, ok := request.GetArguments()["account_name"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing account_name")
 		}
 
-		stream, ok := request.Params.Arguments["stream"].(string)
+		stream, ok := request.GetArguments()["stream"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing stream")
 		}
 
-		id, ok := request.Params.Arguments["id"].(string)
+		id, ok := request.GetArguments()["id"].(string)
 		if !ok {
 			return nil, fmt.Errorf("missing id")
 		}
@@ -488,7 +488,7 @@ func (s *StreamTools) streamGetHandler() server.ToolHandlerFunc {
 		}
 
 		args := []string{"stream", "get", stream, id}
-		if flags := getFlags(request.Params.Arguments); flags != nil {
+		if flags := getFlags(request.GetArguments()); flags != nil {
 			args = append(args, flags...)
 		}
 
