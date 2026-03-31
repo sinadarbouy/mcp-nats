@@ -75,15 +75,9 @@ func (s *AccountTestSuite) TestAccountInfoHandler() {
 
 	// Create a mock request with account_name
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_info",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS", // Using SYS account which should exist by default
 			},
 		},
@@ -112,15 +106,9 @@ func (s *AccountTestSuite) TestAccountReportConnectionsHandler() {
 
 	// Create a mock request with account_name
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_report_connections",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 			},
 		},
@@ -149,15 +137,9 @@ func (s *AccountTestSuite) TestAccountReportConnectionsHandlerWithOptions() {
 
 	// Create a mock request with account_name and options
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_report_connections",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"sort":         "subs",
 				"top":          float64(10),
@@ -188,15 +170,9 @@ func (s *AccountTestSuite) TestAccountReportStatisticsHandler() {
 
 	// Create a mock request with account_name
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_report_statistics",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 			},
 		},
@@ -230,15 +206,9 @@ func (s *AccountTestSuite) TestAccountBackupHandler() {
 
 	// Create a mock request with account_name and target
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_backup",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"target":       tempDir,
 				"force":        true, // Use force to avoid prompts in tests
@@ -280,15 +250,9 @@ func (s *AccountTestSuite) TestAccountBackupHandlerWithOptions() {
 
 	// Create a mock request with account_name, target, and various options
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_backup",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"target":       tempDir,
 				"check":        true,
@@ -337,15 +301,9 @@ func (s *AccountTestSuite) TestAccountRestoreHandler() {
 
 	// Create a mock request with account_name and directory
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_restore",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"directory":    backupDir,
 			},
@@ -392,19 +350,13 @@ func (s *AccountTestSuite) TestAccountRestoreHandlerWithOptions() {
 
 	// Create a mock request with account_name, directory, and options
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_restore",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"directory":    backupDir,
 				"cluster":      "test-cluster",
-				"tags":         []interface{}{"tag1", "tag2"},
+				"tags":         []any{"tag1", "tag2"},
 			},
 		},
 	}
@@ -437,15 +389,9 @@ func (s *AccountTestSuite) TestAccountTLSHandler() {
 
 	// Create a mock request with account_name
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_tls",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 			},
 		},
@@ -479,15 +425,9 @@ func (s *AccountTestSuite) TestAccountTLSHandlerWithOptions() {
 
 	// Create a mock request with account_name and options
 	request := mcp.CallToolRequest{
-		Params: struct {
-			Name      string                 `json:"name"`
-			Arguments map[string]interface{} `json:"arguments,omitempty"`
-			Meta      *struct {
-				ProgressToken mcp.ProgressToken `json:"progressToken,omitempty"`
-			} `json:"_meta,omitempty"`
-		}{
+		Params: mcp.CallToolParams{
 			Name: "account_tls",
-			Arguments: map[string]interface{}{
+			Arguments: map[string]any{
 				"account_name": "SYS",
 				"expire_warn":  "1w",
 				"ocsp":         true,

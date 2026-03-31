@@ -21,23 +21,14 @@ func (t *Tool) Register(mcp *server.MCPServer) {
 	mcp.AddTool(t.Tool, t.Handler)
 }
 
-// RegisterTools registers all tools from all categories with the MCP server
-func RegisterTools(mcp *server.MCPServer, n *NATSServerTools) {
-	// Define tool categories
-	categories := []ToolCategory{
-		n.ServerTools(),
-		n.StreamTools(),
-		n.KVTools(),
-		n.PublishTools(),
-		n.AccountTools(),
-		n.RTTTools(),
-		n.ObjectTools(),
-		// Add new categories here as needed
-	}
-
-	// Register all tools from each category
-	for _, category := range categories {
+// RegisterTools registers all tools from all categories with the MCP server.
+// When readOnly is true, mutating tools (see IsMutatingTool) are not registered.
+func RegisterTools(mcp *server.MCPServer, n *NATSServerTools, readOnly bool) {
+	for _, category := range n.toolCategories() {
 		for _, tool := range category.GetTools() {
+			if readOnly && IsMutatingTool(tool.Tool.Name) {
+				continue
+			}
 			tool.Register(mcp)
 		}
 	}

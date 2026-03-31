@@ -129,3 +129,30 @@ func (n *NATSServerTools) RTTTools() ToolCategory {
 func (n *NATSServerTools) ObjectTools() ToolCategory {
 	return n.objectTools
 }
+
+// toolCategories returns all tool categories in registration order.
+func (n *NATSServerTools) toolCategories() []ToolCategory {
+	return []ToolCategory{
+		n.ServerTools(),
+		n.StreamTools(),
+		n.KVTools(),
+		n.PublishTools(),
+		n.AccountTools(),
+		n.RTTTools(),
+		n.ObjectTools(),
+	}
+}
+
+// ToolCount returns how many tools would be registered for the given readOnly flag.
+func ToolCount(n *NATSServerTools, readOnly bool) int {
+	count := 0
+	for _, category := range n.toolCategories() {
+		for _, tool := range category.GetTools() {
+			if readOnly && IsMutatingTool(tool.Tool.Name) {
+				continue
+			}
+			count++
+		}
+	}
+	return count
+}
