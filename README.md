@@ -179,6 +179,28 @@ Auth smoke test:
 - `--user`: NATS username or token (can also be set via NATS_USER env var)
 - `--password`: NATS password (can also be set via NATS_PASSWORD env var)
 
+### Health Endpoints (HTTP transports)
+- `GET /livez`: process liveness check (does not validate NATS dependency)
+- `GET /readyz`: readiness check (validates TCP connectivity to `NATS_URL`)
+- `GET /healthz`: compatibility alias for liveness
+
+These endpoints are available when running with `sse` or `streamable-http` transport.
+
+### Helm Probe Defaults
+The chart now provides default probe and lifecycle settings tuned for safer rollouts:
+- `startupProbe` -> `/livez` with extended startup window
+- `livenessProbe` -> `/livez`
+- `readinessProbe` -> `/readyz`
+- `lifecycle.preStop` -> `sleep 5` to help with endpoint drain before shutdown
+
+Override any of these defaults with custom values:
+```sh
+helm upgrade --install mcp-nats ./deploy/charts/mcp-nats \
+  --set readinessProbe.httpGet.path=/readyz \
+  --set livenessProbe.httpGet.path=/livez \
+  --set startupProbe.failureThreshold=18
+```
+
 ### Authentication Methods
 
 The MCP NATS server supports three authentication methods:

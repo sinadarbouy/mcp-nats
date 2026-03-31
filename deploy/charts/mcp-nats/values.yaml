@@ -52,9 +52,30 @@ env: {}
 envValueFrom: {}
 envFrom: []
 
-readinessProbe: {}
-livenessProbe: {}
-startupProbe: {}
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: mcp-http
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 2
+  successThreshold: 1
+livenessProbe:
+  httpGet:
+    path: /livez
+    port: mcp-http
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+  successThreshold: 1
+startupProbe:
+  httpGet:
+    path: /livez
+    port: mcp-http
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 12
+  successThreshold: 1
 
 serviceAccount:
   create: true
@@ -146,7 +167,13 @@ annotations: {}
 labels: {}
 extraLabels: {}
 
-lifecycle: {}
+lifecycle:
+  preStop:
+    exec:
+      command:
+        - /bin/sh
+        - -c
+        - sleep 5
 volumeMounts: []
 volumes: []
 initContainers: []

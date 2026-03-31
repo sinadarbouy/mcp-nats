@@ -5,7 +5,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -61,9 +63,81 @@ type httpServer interface {
 	Shutdown(ctx context.Context) error
 }
 
-func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+const readinessTimeout = 2 * time.Second
+
+func writeOK(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("ok"))
+}
+
+func handleLivez(w http.ResponseWriter, _ *http.Request) {
+	writeOK(w)
+}
+
+func handleReadyz(w http.ResponseWriter, _ *http.Request) {
+	ctx, cancel := context.WithTimeout(context.Background(), readinessTimeout)
+	defer cancel()
+
+	if err := checkNATSConnectivity(ctx, os.Getenv("NATS_URL")); err != nil {
+		logger.Warn("Readiness check failed", "error", err)
+		http.Error(w, "nats unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
+	writeOK(w)
+}
+
+func handleHealthz(w http.ResponseWriter, _ *http.Request) {
+	// Keep /healthz as a stable alias for liveness checks.
+	handleLivez(w, nil)
+}
+
+func checkNATSConnectivity(ctx context.Context, rawURL string) error {
+	natsURL := strings.TrimSpace(rawURL)
+	if natsURL == "" {
+		natsURL = "localhost:4222"
+	}
+
+	address := natsURL
+	if strings.Contains(natsURL, "://") {
+		parsedURL, err := url.Parse(natsURL)
+		if err != nil {
+			return fmt.Errorf("invalid NATS URL %q: %w", natsURL, err)
+		}
+		if parsedURL.Host == "" {
+			return fmt.Errorf("invalid NATS URL %q: missing host", natsURL)
+		}
+		address = parsedURL.Host
+	}
+
+	conn, err := (&net.Dialer{}).DialContext(ctx, "tcp", address)
+	if err != nil {
+		return fmt.Errorf("dial NATS at %s: %w", address, err)
+	}
+
+	if closeErr := conn.Close(); closeErr != nil {
+		logger.Debug("Failed to close readiness probe connection", "error", closeErr)
+	}
+	return nil
+}
+
+func newHTTPMux(mcpPath string, mcpHandler http.Handler) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle(mcpPath, mcpHandler)
+	mux.HandleFunc("/livez", handleLivez)
+	mux.HandleFunc("/readyz", handleReadyz)
+	mux.HandleFunc("/healthz", handleHealthz)
+	return mux
+}
+
+func newSSEHTTPMux(sseSrv *server.SSEServer) *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.Handle("/sse", sseSrv.SSEHandler())
+	mux.Handle("/message", sseSrv.MessageHandler())
+	mux.HandleFunc("/livez", handleLivez)
+	mux.HandleFunc("/readyz", handleReadyz)
+	mux.HandleFunc("/healthz", handleHealthz)
+	return mux
 }
 
 func runHTTPServer(ctx context.Context, srv httpServer, addr, transportName string) error {
@@ -148,7 +222,13 @@ func run(ctx context.Context, cfg *Config) error {
 		return srv.Listen(ctx, os.Stdin, os.Stdout)
 
 	case "sse":
-		srv := server.NewSSEServer(s, server.WithSSEContextFunc(mcpnats.ComposedSSEContextFunc()))
+		httpSrv := &http.Server{Addr: cfg.Address}
+		srv := server.NewSSEServer(
+			s,
+			server.WithSSEContextFunc(mcpnats.ComposedSSEContextFunc()),
+			server.WithHTTPServer(httpSrv),
+		)
+		httpSrv.Handler = newSSEHTTPMux(srv)
 		logger.Info("Starting NATS MCP server using SSE transport",
 			"address", cfg.Address,
 		)
@@ -161,10 +241,7 @@ func run(ctx context.Context, cfg *Config) error {
 			server.WithEndpointPath(cfg.EndpointPath),
 			server.WithStreamableHTTPServer(httpSrv),
 		)
-		mux := http.NewServeMux()
-		mux.Handle(cfg.EndpointPath, srv)
-		mux.HandleFunc("/healthz", handleHealthz)
-		httpSrv.Handler = mux
+		httpSrv.Handler = newHTTPMux(cfg.EndpointPath, srv)
 
 		logger.Info("Starting NATS MCP server using Streamable HTTP transport",
 			"address", cfg.Address,
