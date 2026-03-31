@@ -110,6 +110,46 @@ helm install mcp-nats ./deploy/charts/mcp-nats \
   --set auth.existingSecret.name=mcp-nats-auth
 ```
 
+### Tilt Integration Test (Docker Desktop Kubernetes)
+Use Tilt to deploy both official NATS and the local `mcp-nats` chart for end-to-end auth testing.
+
+Prerequisites:
+- Tilt installed
+- Helm installed
+- Docker Desktop Kubernetes enabled
+- Current kube context set to `docker-desktop`
+
+Start the integration stack:
+```sh
+tilt up
+```
+
+This uses:
+- `Tiltfile`
+- `deploy/tilt/nats-values.yaml`
+- `deploy/tilt/mcp-nats-values.yaml`
+- a local image build with `deploy/tilt/Dockerfile.tilt` before Helm deploy
+
+Stop and clean up:
+```sh
+tilt down
+helm uninstall -n mcp-nats-tilt nats mcp-nats
+kubectl delete namespace mcp-nats-tilt --ignore-not-found
+```
+
+Quick verification commands:
+```sh
+kubectl get pods,svc -n mcp-nats-tilt
+kubectl logs -n mcp-nats-tilt deploy/mcp-nats-mcp-nats
+kubectl logs -n mcp-nats-tilt statefulset/nats
+kubectl port-forward -n mcp-nats-tilt svc/mcp-nats-mcp-nats 8000:8000
+```
+
+Auth smoke test:
+- NATS is configured with `mcpuser` / `mcppassword` in `deploy/tilt/nats-values.yaml`.
+- `mcp-nats` uses the same credentials via chart-managed secret in `deploy/tilt/mcp-nats-values.yaml`.
+- If credentials mismatch, `mcp-nats` logs will show connection/authentication failures.
+
 ## Configuration
 
 ### Environment Variables

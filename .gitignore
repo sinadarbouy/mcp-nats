@@ -1,5 +1,6 @@
 .vscode/*
 .cursor/*
-mcp-nats
+/mcp-nats
 venv/*
 tasks/*
+.helm/
