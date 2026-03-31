@@ -1,17 +1,208 @@
-name: goreleaser
+name: release
 
 on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "cmd/**"
+      - "internal/**"
+      - "tools/**"
+      - "deploy/charts/mcp-nats/**"
+      - ".github/workflows/release.yml"
   push:
-    # run only against tags
     tags:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
+  packages: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  goreleaser:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      chart_version: ${{ steps.meta.outputs.chart_version }}
+      app_version: ${{ steps.meta.outputs.app_version }}
+      image: ${{ steps.meta.outputs.image }}
+      chart_ref: ${{ steps.meta.outputs.chart_ref }}
+      publish: ${{ steps.meta.outputs.publish }}
+      owner_lc: ${{ steps.meta.outputs.owner_lc }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Resolve release metadata and validate versions
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          chart_file="deploy/charts/mcp-nats/Chart.yaml"
+          if [[ ! -f "${chart_file}" ]]; then
+            echo "Missing ${chart_file}" >&2
+            exit 1
+          fi
+
+          chart_version="$(awk -F': *' '$1=="version"{print $2}' "${chart_file}" | tr -d '"')"
+          app_version="$(awk -F': *' '$1=="appVersion"{print $2}' "${chart_file}" | tr -d '"')"
+
+          if [[ -z "${chart_version}" || -z "${app_version}" ]]; then
+            echo "Chart.yaml must define both version and appVersion" >&2
+            exit 1
+          fi
+          if [[ "${chart_version}" != "${app_version}" ]]; then
+            echo "Chart version (${chart_version}) must match appVersion (${app_version})" >&2
+            exit 1
+          fi
+
+          owner_lc="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner_lc}/mcp-nats"
+          chart_ref="ghcr.io/${owner_lc}/charts/mcp-nats"
+
+          publish="false"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            publish="true"
+            tag="${GITHUB_REF_NAME}"
+            if [[ "${tag}" != "v${chart_version}" ]]; then
+              echo "Tag (${tag}) must match Chart.yaml version (v${chart_version})" >&2
+              exit 1
+            fi
+          fi
+
+          {
+            echo "chart_version=${chart_version}"
+            echo "app_version=${app_version}"
+            echo "image=${image}"
+            echo "chart_ref=${chart_ref}"
+            echo "publish=${publish}"
+            echo "owner_lc=${owner_lc}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Summary
+        run: |
+          {
+            echo "## Release metadata"
+            echo "- chartVersion: \`${{ steps.meta.outputs.chart_version }}\`"
+            echo "- appVersion: \`${{ steps.meta.outputs.app_version }}\`"
+            echo "- image: \`${{ steps.meta.outputs.image }}\`"
+            echo "- chart: \`${{ steps.meta.outputs.chart_ref }}\`"
+            echo "- publish mode: \`${{ steps.meta.outputs.publish }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  image:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: needs.prepare.outputs.publish == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: docker_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ needs.prepare.outputs.image }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.chart_version }}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-') }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.chart_version }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ needs.prepare.outputs.publish == 'true' }}
+          tags: ${{ steps.docker_meta.outputs.tags }}
+          labels: ${{ steps.docker_meta.outputs.labels }}
+          provenance: false
+
+      - name: Summary
+        run: |
+          {
+            echo "## Container image"
+            echo "- publish: \`${{ needs.prepare.outputs.publish }}\`"
+            echo "- tags:"
+            echo "${{ steps.docker_meta.outputs.tags }}" | sed 's/^/  - `/' | sed 's/$/`/'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  helm:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint chart
+        run: helm lint deploy/charts/mcp-nats
+
+      - name: Package chart
+        run: |
+          mkdir -p .dist
+          helm package deploy/charts/mcp-nats --destination .dist
+
+      - name: Login to GHCR for Helm
+        if: needs.prepare.outputs.publish == 'true'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io \
+            --username "${{ github.actor }}" \
+            --password-stdin
+
+      - name: Push chart to GHCR
+        if: needs.prepare.outputs.publish == 'true'
+        run: |
+          helm push ".dist/mcp-nats-${{ needs.prepare.outputs.chart_version }}.tgz" "oci://ghcr.io/${{ needs.prepare.outputs.owner_lc }}/charts"
+
+      - name: Summary
+        run: |
+          {
+            echo "## Helm chart"
+            echo "- publish: \`${{ needs.prepare.outputs.publish }}\`"
+            echo "- package: \`mcp-nats-${{ needs.prepare.outputs.chart_version }}.tgz\`"
+            echo "- target: \`oci://ghcr.io/${{ needs.prepare.outputs.owner_lc }}/charts\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  goreleaser:
+    needs:
+      - prepare
+      - image
+      - helm
+    if: needs.prepare.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
