@@ -64,7 +64,7 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
   - Safe, read-only operations for AI interaction with NATS
 
 ## Requirements
-- Go 1.24 or later
+- Go 1.25 or later
 - NATS server (accessible via URL)
 - NATS credentials for authentication
 - MCP-compatible client (e.g., Claude Desktop, or other MCP clients)
@@ -369,7 +369,7 @@ If using the binary:
 ## Development
 
 ### Prerequisites
-- Go 1.24+
+- Go 1.25+
 - Docker (optional)
 - NATS CLI
 - Understanding of MCP specification

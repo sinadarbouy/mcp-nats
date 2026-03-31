@@ -4,3 +4,4 @@
 venv/*
 tasks/*
 .helm/
+.gomodcache/*
