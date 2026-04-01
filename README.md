@@ -83,40 +83,23 @@ cd mcp-nats
 go build -o mcp-nats ./cmd/mcp-nats
 ```
 
-### Helm Chart (Kubernetes)
-The Helm chart is available at `deploy/charts/mcp-nats`.
+### Helm chart (Kubernetes)
 
-Install with defaults:
+The chart is in [`deploy/charts/mcp-nats`](deploy/charts/mcp-nats). Install guides (including **OCI / GHCR** and umbrella-chart `dependencies`), values overview, probes, and the **HashiCorp Vault Agent Injector** example are in **[deploy/charts/mcp-nats/README.md](deploy/charts/mcp-nats/README.md)**.
+
+Quick start from the repository root:
+
 ```sh
-helm install mcp-nats ./deploy/charts/mcp-nats
+helm install mcp-nats ./deploy/charts/mcp-nats --namespace mcp-nats --create-namespace
 ```
 
-Streamable HTTP mode with explicit server values:
+Published releases are also installable from OCI, for example:
+
 ```sh
-helm install mcp-nats ./deploy/charts/mcp-nats \
-  --set server.transport=streamable-http \
-  --set server.address=0.0.0.0:8000 \
-  --set server.endpointPath=/mcp
+helm install mcp-nats oci://ghcr.io/sinadarbouy/charts/mcp-nats --version "0.1.0" --namespace mcp-nats --create-namespace
 ```
 
-Anonymous authentication example:
-```sh
-helm install mcp-nats ./deploy/charts/mcp-nats \
-  --set nats.url=nats://nats.default.svc:4222 \
-  --set nats.noAuthentication=true
-```
-
-User/password authentication example with existing secret:
-```sh
-kubectl create secret generic mcp-nats-auth \
-  --from-literal=NATS_USER=myuser \
-  --from-literal=NATS_PASSWORD=mypass
-
-helm install mcp-nats ./deploy/charts/mcp-nats \
-  --set nats.url=nats://nats.default.svc:4222 \
-  --set nats.noAuthentication=false \
-  --set auth.existingSecret.name=mcp-nats-auth
-```
+See the chart README for `Chart.yaml` dependency snippets and registry login.
 
 ### Tilt Integration Test (Docker Desktop Kubernetes)
 Use Tilt to deploy both official NATS and the local `mcp-nats` chart for end-to-end auth testing.
@@ -186,20 +169,9 @@ Auth smoke test:
 
 These endpoints are available when running with `sse` or `streamable-http` transport.
 
-### Helm Probe Defaults
-The chart now provides default probe and lifecycle settings tuned for safer rollouts:
-- `startupProbe` -> `/livez` with extended startup window
-- `livenessProbe` -> `/livez`
-- `readinessProbe` -> `/readyz`
-- `lifecycle.preStop` -> `sleep 5` to help with endpoint drain before shutdown
+### Helm chart probes
 
-Override any of these defaults with custom values:
-```sh
-helm upgrade --install mcp-nats ./deploy/charts/mcp-nats \
-  --set readinessProbe.httpGet.path=/readyz \
-  --set livenessProbe.httpGet.path=/livez \
-  --set startupProbe.failureThreshold=18
-```
+Default probes and `lifecycle.preStop` are documented in [deploy/charts/mcp-nats/README.md](deploy/charts/mcp-nats/README.md).
 
 ### Authentication Methods
 
@@ -252,8 +224,9 @@ Make sure your .vscode/settings.json includes:
   }
 }
 ```
-or 
-cursor
+
+**Cursor** (`mcpServers`):
+
 ```json
 {
   "mcpServers": {
