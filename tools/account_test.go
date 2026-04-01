@@ -42,10 +42,10 @@ func (s *AccountTestSuite) SetupSuite() {
 	// Start NATS container
 	s.natsContainer = containers.NewNatsContainer(s.ctx, s.T())
 
-	// Get NATS URL
+	// Get NATS URL (use Port.Port() — nat.Port.String() includes "/tcp")
 	natsHost := s.natsContainer.Host
 	natsPort := s.natsContainer.Port
-	s.natsURL = fmt.Sprintf("nats://%s:%s", natsHost, natsPort)
+	s.natsURL = fmt.Sprintf("nats://%s:%s", natsHost, natsPort.Port())
 
 	// Create test credentials for the SYS account
 	// For test containers, we can use empty credentials since auth is not required
