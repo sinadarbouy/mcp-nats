@@ -22,7 +22,7 @@ import (
 
 const (
 	// Version of the application
-	Version = "0.1.0"
+	Version = "0.1.4"
 	// AppName is the name of the application
 	AppName = "mcp-nats"
 )
