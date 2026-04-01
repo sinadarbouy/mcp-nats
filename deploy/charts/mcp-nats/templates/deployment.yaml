@@ -83,7 +83,9 @@ spec:
           command:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if or (not .Values.command) .Values.args .Values.extraArgs }}
           args:
+            {{- if not .Values.command }}
             - --transport
             - {{ .Values.server.transport | quote }}
             - --address
@@ -92,12 +94,14 @@ spec:
             - --endpoint-path
             - {{ .Values.server.endpointPath | quote }}
             {{- end }}
+            {{- end }}
             {{- with .Values.args }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
             {{- with .Values.extraArgs }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
+          {{- end }}
           {{- with .Values.readinessProbe }}
           readinessProbe:
             {{- toYaml . | nindent 12 }}
