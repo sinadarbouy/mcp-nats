@@ -9,9 +9,9 @@ deploymentStrategy:
 revisionHistoryLimit: 10
 
 image:
-  registry: ""
-  repository: cnadb/mcp-nats
-  tag: ""
+  registry: "ghcr.io"
+  repository: sinadarbouy/mcp-nats
+  tag: "0.1.4"
   pullPolicy: IfNotPresent
 
 global:

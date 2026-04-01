@@ -33,7 +33,7 @@ helm upgrade --install mcp-nats . --namespace mcp-nats -f my-values.yaml
 
 Tagged releases publish this chart to **GHCR** (see the repository [release workflow](https://github.com/sinadarbouy/mcp-nats/blob/main/.github/workflows/release.yml)). The OCI registry path is `oci://ghcr.io/sinadarbouy/charts`; the chart artifact name is **`mcp-nats`**.
 
-Set **`version`** to the chart version you want (it must match a published tag’s chart, for example `0.1.0`).
+Set **`version`** to the chart version you want (it must match a published tag’s chart, for example `0.1.4`).
 
 **Direct install / upgrade**
 
@@ -42,17 +42,17 @@ Set **`version`** to the chart version you want (it must match a published tag�
 helm registry login ghcr.io
 
 helm install mcp-nats oci://ghcr.io/sinadarbouy/charts/mcp-nats \
-  --version "0.1.0" \
+  --version "0.1.4" \
   --namespace mcp-nats \
   --create-namespace
 
 helm upgrade --install mcp-nats oci://ghcr.io/sinadarbouy/charts/mcp-nats \
-  --version "0.1.0" \
+  --version "0.1.4" \
   --namespace mcp-nats \
   -f my-values.yaml
 ```
 
-Default [values.yaml](values.yaml) uses the Docker Hub image `cnadb/mcp-nats`. Releases built from this repo also publish **`ghcr.io/sinadarbouy/mcp-nats`** with the same version tag as the chart; override `image.repository` / `image.tag` if you want the GitHub-built image to match your chart version.
+Default [values.yaml](values.yaml) points at **`ghcr.io/sinadarbouy/mcp-nats`** with a tag matching chart **`appVersion`**. Override `image.registry`, `image.repository`, or `image.tag` if you use a different registry or pin another digest.
 
 **As a dependency of another chart**
 
@@ -64,7 +64,7 @@ name: my-platform
 version: 0.1.0
 dependencies:
   - name: mcp-nats
-    version: "0.1.0"
+    version: "0.1.4"
     repository: "oci://ghcr.io/sinadarbouy/charts"
 ```
 
@@ -81,7 +81,7 @@ Helm resolves `name: mcp-nats` against that OCI repository (chart URL becomes `o
 
 | Area | Values keys | Notes |
 |------|-------------|--------|
-| Image | `image.repository`, `image.tag`, `image.registry`, `image.pullPolicy` | Default image is `cnadb/mcp-nats`; `tag` defaults to chart `appVersion` when empty. |
+| Image | `image.repository`, `image.tag`, `image.registry`, `image.pullPolicy` | Default is **`ghcr.io/sinadarbouy/mcp-nats`**; `tag` defaults to chart `appVersion` when empty. |
 | MCP HTTP | `server.transport`, `server.address`, `server.endpointPath`, `containerPort`, `service.*` | Default transport is `streamable-http` on port **8000**, path **`/mcp`**. |
 | NATS | `nats.url`, `nats.noAuthentication` | Sets `NATS_URL` and `NATS_NO_AUTHENTICATION` on the pod. |
 | User/password auth | `auth.existingSecret`, `auth.createSecret` / `auth.secretData` | When `nats.noAuthentication` is `false`, use an existing Secret or let the chart create one. |
