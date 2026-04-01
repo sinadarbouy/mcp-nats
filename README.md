@@ -259,8 +259,8 @@ cursor
   "mcpServers": {
     "nats": {
       "env": {
-        "NATS_URL": "nats://localhost:42222",
-        "NATS_SYS_CREDS": "<base64 of SYS account creds>"
+        "NATS_URL": "nats://localhost:4222",
+        "NATS_SYS_CREDS": "<base64 of SYS account creds>",
         "NATS_A_CREDS": "<base64 of A account creds>"
       },
       "url": "http://localhost:8000/mcp"
@@ -275,7 +275,7 @@ cursor
   "mcpServers": {
     "nats": {
       "env": {
-        "NATS_URL": "nats://localhost:42222",
+        "NATS_URL": "nats://localhost:4222",
         "NATS_NO_AUTHENTICATION": "true"
       },
       "url": "http://localhost:8000/mcp"
@@ -290,7 +290,7 @@ cursor
   "mcpServers": {
     "nats": {
       "env": {
-        "NATS_URL": "nats://localhost:42222",
+        "NATS_URL": "nats://localhost:4222",
         "NATS_USER": "myuser",
         "NATS_PASSWORD": "mypass"
       },
@@ -311,7 +311,7 @@ If using the binary:
         "stdio"
       ],
       "env": {
-        "NATS_URL": "nats://localhost:42222",
+        "NATS_URL": "nats://localhost:4222",
         "NATS_SYS_CREDS": "<base64 of SYS account creds>",
         "NATS_A_CREDS": "<base64 of A account creds>"
       }

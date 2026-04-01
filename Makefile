@@ -18,7 +18,7 @@ lint:  ## Lint the Go code.
 
 .PHONY: run
 run: ## Run the MCP server in stdio mode.
-	go run ./cmd/mcp-nats
+	go run ./cmd/mcp-nats --transport stdio
 
 .PHONY: run-sse
 run-sse: ## Run with debug level and JSON format
