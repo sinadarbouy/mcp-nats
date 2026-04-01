@@ -174,8 +174,14 @@ lifecycle:
         - /bin/sh
         - -c
         - sleep 5
-volumeMounts: []
-volumes: []
+
+# Writable /tmp when readOnlyRootFilesystem is true (NATS credential temp files).
+volumeMounts:
+  - name: tmp
+    mountPath: /tmp
+volumes:
+  - name: tmp
+    emptyDir: {}
 initContainers: []
 extraInitContainers: []
 extraContainers: []
