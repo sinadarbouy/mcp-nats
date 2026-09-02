@@ -101,6 +101,20 @@ helm install mcp-nats oci://ghcr.io/sinadarbouy/charts/mcp-nats --version "0.1.4
 
 See the chart README for `Chart.yaml` dependency snippets and registry login.
 
+### Container image signatures
+
+Tagged releases push `ghcr.io/sinadarbouy/mcp-nats` and sign the multi-arch index (and each platform manifest) with [Sigstore Cosign](https://docs.sigstore.dev/cosign/signing/overview/) using keyless GitHub OIDC.
+
+Verify a published tag:
+
+```sh
+cosign verify ghcr.io/sinadarbouy/mcp-nats:0.1.4 \
+  --certificate-identity-regexp 'https://github.com/sinadarbouy/mcp-nats/.github/workflows/(release\.yml@refs/tags/v.*|sign-image\.yml@refs/heads/main)' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+Historical tags published before signing was added can be signed from **Actions → sign-image** (run from `main`).
+
 ### Tilt Integration Test (Docker Desktop Kubernetes)
 Use Tilt to deploy both official NATS and the local `mcp-nats` chart for end-to-end auth testing.
 

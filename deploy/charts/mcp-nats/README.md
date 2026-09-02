@@ -54,6 +54,8 @@ helm upgrade --install mcp-nats oci://ghcr.io/sinadarbouy/charts/mcp-nats \
 
 Default [values.yaml](values.yaml) points at **`ghcr.io/sinadarbouy/mcp-nats`** with a tag matching chart **`appVersion`**. Override `image.registry`, `image.repository`, or `image.tag` if you use a different registry or pin another digest.
 
+Release images are **Cosign-signed** (Sigstore keyless). See the repository README section **Container image signatures** for `cosign verify`.
+
 **As a dependency of another chart**
 
 In the parent chart’s `Chart.yaml`:

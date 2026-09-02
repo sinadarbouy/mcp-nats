@@ -101,6 +101,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -131,6 +132,7 @@ jobs:
             org.opencontainers.image.version=${{ needs.prepare.outputs.chart_version }}
 
       - name: Build and push image
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -139,13 +141,33 @@ jobs:
           push: ${{ needs.prepare.outputs.publish == 'true' }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
-          provenance: false
+          provenance: true
+          sbom: true
+
+      - name: Install Cosign
+        if: needs.prepare.outputs.publish == 'true'
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign image
+        if: needs.prepare.outputs.publish == 'true'
+        env:
+          IMAGE: ${{ needs.prepare.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${DIGEST}" ]]; then
+            echo "Build did not produce an image digest" >&2
+            exit 1
+          fi
+          # Sign the index and each platform manifest (amd64/arm64).
+          cosign sign --yes --recursive "${IMAGE}@${DIGEST}"
 
       - name: Summary
         run: |
           {
             echo "## Container image"
             echo "- publish: \`${{ needs.prepare.outputs.publish }}\`"
+            echo "- digest: \`${{ steps.build.outputs.digest }}\`"
             echo "- tags:"
             echo "${{ steps.docker_meta.outputs.tags }}" | sed 's/^/  - `/' | sed 's/$/`/'
           } >> "${GITHUB_STEP_SUMMARY}"

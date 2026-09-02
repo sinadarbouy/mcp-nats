@@ -1,0 +1,61 @@
+name: sign-image
+
+# Sign an already published GHCR tag (for example 0.1.4) without rebuilding.
+# Use this to remediate unsigned historical releases. New tags are signed by release.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag on GHCR to sign (for example 0.1.4)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  sign:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Sign existing image
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "${TAG}" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$ ]]; then
+            echo "Invalid image tag: ${TAG}" >&2
+            exit 1
+          fi
+          owner_lc="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner_lc}/mcp-nats"
+          ref="${image}:${TAG}"
+          digest="$(docker buildx imagetools inspect "${ref}" --format '{{.Manifest.Digest}}' | tr -d '[:space:]')"
+          if [[ -z "${digest}" || "${digest}" != sha256:* ]]; then
+            echo "Could not resolve digest for ${ref}" >&2
+            exit 1
+          fi
+          echo "Signing ${ref} (${digest})"
+          cosign sign --yes --recursive "${image}@${digest}"
+          {
+            echo "## Signed image"
+            echo "- image: \`${ref}\`"
+            echo "- digest: \`${digest}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
